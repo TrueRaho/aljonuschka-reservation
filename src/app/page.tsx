@@ -98,7 +98,7 @@ export default function ReservationsPage() {
         <div className="relative">
           {/* Grid with two columns: time labels and reservations. Each iteration outputs a pair of cells so they share the same row height. */}
           <div className="relative">
-            <div className="grid grid-cols-[100px_1fr] gap-4">
+            <div className="grid grid-cols-[100px_1fr] gap-x-4">
               {timeSlots.map((slot) => {
                 const slotReservations = getReservationsForTimeSlot(slot.time)
                 return (
