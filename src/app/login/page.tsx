@@ -23,27 +23,17 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const result = await signIn("credentials", {
-        method: "POST",
+      await signIn("credentials", {
         password,
-        redirect: false,
+        callbackUrl: "/api/auth/redirect",
       }).catch(err => {
         console.error("SignIn error:", err);
-        return { error: err.toString() };
+        setError("Invalid password. Please try again.");
+        return null;
       });
-
-      if (result?.error) {
-        setError("Invalid password. Please try again.")
-      } else {
-        // Get the session to determine role and redirect
-        const session = await getSession()
-        if (session?.user?.role === "admin") {
-          router.push("/admin-only")
-        } else if (session?.user?.role === "staff") {
-          router.push("/reservations")
-        }
-      }
+      
     } catch (error) {
+      console.error("Login error:", error);
       setError("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)

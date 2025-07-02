@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS auth_passwords (
 -- Staff password: "staff123" 
 -- Admin password: "admin456"
 INSERT INTO auth_passwords (role, password_hash) VALUES
-('staff', '$2b$12$rQJ8YqF7H.Zx9Z8vK2L3/.XJ4K5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z'),
-('admin', '$2b$12$sT9U0V1W2X3Y4Z5A6B7C8D.9E0F1G2H3I4J5K6L7M8N9O0P1Q2R3S4T');
+('staff', '$2a$12$M510dL2KJLiYU21Fgw0TK.CQ9DnsJDdEdHUnCQzQEEjJWIKIpwVRK'),
+('admin', '$2a$12$s0s8rnEk5TWP81aq.7q3oukasGr73dp8lqark8Pl2ZBS/WiSmL6pa');
 
 -- Note: In production, you should generate these hashes using bcrypt
 -- Example in Node.js: await bcrypt.hash('staff123', 12)
