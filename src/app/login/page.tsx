@@ -24,9 +24,13 @@ export default function LoginPage() {
 
     try {
       const result = await signIn("credentials", {
+        method: "POST",
         password,
         redirect: false,
-      })
+      }).catch(err => {
+        console.error("SignIn error:", err);
+        return { error: err.toString() };
+      });
 
       if (result?.error) {
         setError("Invalid password. Please try again.")
