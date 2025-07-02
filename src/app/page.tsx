@@ -102,8 +102,8 @@ export default function ReservationsPage() {
               {timeSlots.map((slot, index) => (
                 <div
                   key={slot.time}
-                  className="text-gray-400 text-sm font-medium flex items-center justify-end pr-4 border-b border-gray-700"
-                  style={{ height: `${slotHeight}px` }}
+                  className="text-gray-400 text-sm font-medium flex items-start justify-end pr-4 border-b border-gray-700 py-2"
+                  style={{ minHeight: `${slotHeight}px` }}
                 >
                   {slot.time}
                 </div>
@@ -117,8 +117,8 @@ export default function ReservationsPage() {
                 return (
                   <div
                     key={slot.time}
-                    className="border-b border-gray-700 flex items-center gap-2 px-4"
-                    style={{ height: `${slotHeight}px` }}
+                    className="border-b border-gray-700 flex flex-wrap items-start gap-2 px-4 py-2"
+                    style={{ minHeight: `${slotHeight}px` }}
                   >
                     {loading ? (
                       <div className="text-gray-500 text-sm">Loading...</div>

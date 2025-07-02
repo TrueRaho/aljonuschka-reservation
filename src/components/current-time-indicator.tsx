@@ -57,11 +57,14 @@ export function CurrentTimeIndicator({
   }
 
   return (
-    <div className="absolute left-0 right-0 z-10 pointer-events-none" style={{ top: `${topPosition}px` }}>
-      <div className="flex items-center">
-        <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">{formatCurrentTime()}</div>
-        <div className="flex-1 h-0.5 bg-red-500"></div>
+    <div
+      className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+      style={{ top: `${topPosition}px` }}
+    >
+      <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-medium mr-2 shadow-lg">
+        {formatCurrentTime()}
       </div>
+      <div className="flex-1 h-0.5 bg-red-500 shadow-sm"></div>
     </div>
   )
 }

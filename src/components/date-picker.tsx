@@ -36,7 +36,7 @@ export function DatePicker({ date, onDateChange }: DatePickerProps) {
 
   const days = eachDayOfInterval({ start: startDate, end: endDate })
 
-  const dayHeaders = ["S", "M", "T", "W", "T", "F", "S"]
+  const dayHeaders = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 
   const handleDateSelect = (selectedDate: Date) => {
     onDateChange(selectedDate)
