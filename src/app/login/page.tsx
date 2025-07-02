@@ -17,25 +17,46 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      await signIn("credentials", {
+      // Проверяем пароль на пустоту
+      if (!password.trim()) {
+        setError("Please enter a password")
+        setIsLoading(false)
+        return
+      }
+
+      // Используем callbackUrl для редиректа после успешной авторизации
+      // Это позволит NextAuth.js самостоятельно обработать сессию и редирект
+      const result = await signIn("credentials", {
         password,
         callbackUrl: "/api/auth/redirect",
-      }).catch(err => {
-        console.error("SignIn error:", err);
-        setError("Invalid password. Please try again.");
-        return null;
-      });
+        redirect: false, // Отключаем автоматический редирект, чтобы обработать ошибки
+      })
       
+      // Проверяем результат
+      if (result?.error) {
+        // Если есть ошибка - показываем её
+        setError("Invalid password. Please try again.")
+        setIsLoading(false)
+      } else if (result?.ok) {
+        // Если авторизация успешна - перенаправляем на URL из callbackUrl
+        console.log("Authentication successful, redirecting to", result.url)
+        // Используем window.location вместо router.push для полной перезагрузки страницы с обновленной сессией
+        window.location.href = result.url || "/api/auth/redirect"
+      } else {
+        // Неожиданный результат
+        console.warn("Unexpected authentication result:", result)
+        setError("An unexpected error occurred")
+        setIsLoading(false)
+      }
     } catch (error) {
-      console.error("Login error:", error);
-      setError("An error occurred. Please try again.")
-    } finally {
+      console.error("Login error:", error)
+      setError("An error occurred during sign in. Please try again.")
       setIsLoading(false)
     }
   }
