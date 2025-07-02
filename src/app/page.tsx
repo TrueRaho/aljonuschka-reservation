@@ -1,103 +1,155 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect } from "react"
+import { format } from "date-fns"
+import type { Reservation } from "@/types/reservation"
+import { ReservationModal } from "@/components/reservation-modal"
+import { ReservationCard } from "@/components/reservation-card"
+import { CurrentTimeIndicator } from "@/components/current-time-indicator"
+import { DatePicker } from "@/components/date-picker"
+
+export default function ReservationsPage() {
+  const [selectedDate, setSelectedDate] = useState(new Date(2025, 6, 2)) // July 2, 2025
+  const [reservations, setReservations] = useState<Reservation[]>([])
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // Generate time slots from 11:30 to 22:00 in 15-minute intervals
+  const generateTimeSlots = () => {
+    const slots = []
+    const startHour = 11
+    const startMinute = 30
+    const endHour = 22
+    const endMinute = 0
+
+    let currentHour = startHour
+    let currentMinute = startMinute
+
+    while (currentHour < endHour || (currentHour === endHour && currentMinute <= endMinute)) {
+      slots.push({
+        time: `${currentHour.toString().padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`,
+        hour: currentHour,
+        minute: currentMinute,
+      })
+
+      currentMinute += 15
+      if (currentMinute >= 60) {
+        currentMinute = 0
+        currentHour += 1
+      }
+    }
+
+    return slots
+  }
+
+  const timeSlots = generateTimeSlots()
+  const slotHeight = 60 // Height of each time slot in pixels
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      setLoading(true)
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd")
+        const response = await fetch(`/api/reservations?date=${dateStr}`)
+        if (response.ok) {
+          const data = await response.json()
+          setReservations(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch reservations:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReservations()
+  }, [selectedDate])
+
+  const getReservationsForTimeSlot = (time: string) => {
+    return reservations.filter((reservation) => {
+      const reservationTime = reservation.reservation_time.substring(0, 5) // Get HH:MM format
+      return reservationTime === time
+    })
+  }
+
+  const formatDateHeader = (date: Date) => {
+    return format(date, "EEEE, MMMM d, yyyy")
+  }
+
+  const handleReservationClick = (reservation: Reservation) => {
+    setSelectedReservation(reservation)
+    setIsModalOpen(true)
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-light">{format(selectedDate, "d MMMM yyyy")}</h1>
+            <DatePicker date={selectedDate} onDateChange={setSelectedDate} />
+          </div>
+          <p className="text-xl text-gray-400 font-light">{format(selectedDate, "EEEE")}</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Schedule */}
+        <div className="relative">
+          <div className="grid grid-cols-[100px_1fr] gap-4">
+            {/* Time labels column */}
+            <div className="space-y-0">
+              {timeSlots.map((slot, index) => (
+                <div
+                  key={slot.time}
+                  className="text-gray-400 text-sm font-medium flex items-center justify-end pr-4 border-b border-gray-700"
+                  style={{ height: `${slotHeight}px` }}
+                >
+                  {slot.time}
+                </div>
+              ))}
+            </div>
+
+            {/* Reservations column */}
+            <div className="relative">
+              {timeSlots.map((slot, index) => {
+                const slotReservations = getReservationsForTimeSlot(slot.time)
+                return (
+                  <div
+                    key={slot.time}
+                    className="border-b border-gray-700 flex items-center gap-2 px-4"
+                    style={{ height: `${slotHeight}px` }}
+                  >
+                    {loading ? (
+                      <div className="text-gray-500 text-sm">Loading...</div>
+                    ) : (
+                      slotReservations.map((reservation) => (
+                        <ReservationCard
+                          key={reservation.id}
+                          reservation={reservation}
+                          onClick={() => handleReservationClick(reservation)}
+                        />
+                      ))
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Current time indicator */}
+              <CurrentTimeIndicator
+                startHour={11}
+                startMinute={30}
+                intervalMinutes={15}
+                slotHeight={slotHeight}
+                selectedDate={selectedDate}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reservation Modal */}
+      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
-  );
+  )
 }
