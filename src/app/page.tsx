@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import { format } from "date-fns"
 import type { Reservation } from "@/types/reservation"
 import { ReservationModal } from "@/components/reservation-modal"
@@ -96,58 +96,54 @@ export default function ReservationsPage() {
 
         {/* Schedule */}
         <div className="relative">
-          <div className="grid grid-cols-[100px_1fr] gap-4">
-            {/* Time labels column */}
-            <div className="space-y-0">
-              {timeSlots.map((slot, index) => (
-                <div
-                  key={slot.time}
-                  className="text-gray-400 text-sm font-medium flex items-start justify-end pr-4 border-b border-gray-700 py-2"
-                  style={{ minHeight: `${slotHeight}px` }}
-                >
-                  {slot.time}
-                </div>
-              ))}
-            </div>
-
-            {/* Reservations column */}
-            <div className="relative">
-              {timeSlots.map((slot, index) => {
+          {/* Grid with two columns: time labels and reservations. Each iteration outputs a pair of cells so they share the same row height. */}
+          <div className="relative">
+            <div className="grid grid-cols-[100px_1fr] gap-4">
+              {timeSlots.map((slot) => {
                 const slotReservations = getReservationsForTimeSlot(slot.time)
                 return (
-                  <div
-                    key={slot.time}
-                    className="border-b border-gray-700 flex flex-wrap items-start gap-2 px-4 py-2"
-                    style={{ minHeight: `${slotHeight}px` }}
-                  >
-                    {loading ? (
-                      <div className="text-gray-500 text-sm">Loading...</div>
-                    ) : (
-                      slotReservations.map((reservation) => (
-                        <ReservationCard
-                          key={reservation.id}
-                          reservation={reservation}
-                          onClick={() => handleReservationClick(reservation)}
-                        />
-                      ))
-                    )}
-                  </div>
+                  <Fragment key={slot.time}>
+                    {/* Time label */}
+                    <div
+                      className="text-gray-400 text-sm font-medium flex items-start justify-end pr-4 border-b border-gray-700 py-2"
+                      style={{ minHeight: `${slotHeight}px` }}
+                    >
+                      {slot.time}
+                    </div>
+
+                    {/* Reservations cell */}
+                    <div
+                      className="border-b border-gray-700 flex flex-wrap items-start gap-2 px-4 py-2"
+                      style={{ minHeight: `${slotHeight}px` }}
+                    >
+                      {loading ? (
+                        <div className="text-gray-500 text-sm">Loading...</div>
+                      ) : (
+                        slotReservations.map((reservation) => (
+                          <ReservationCard
+                            key={reservation.id}
+                            reservation={reservation}
+                            onClick={() => handleReservationClick(reservation)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </Fragment>
                 )
               })}
-
-              {/* Current time indicator */}
-              <CurrentTimeIndicator
-                startHour={11}
-                startMinute={30}
-                intervalMinutes={15}
-                slotHeight={slotHeight}
-                selectedDate={selectedDate}
-              />
             </div>
+
+            {/* Current time indicator overlay */}
+            <CurrentTimeIndicator
+              startHour={11}
+              startMinute={30}
+              intervalMinutes={15}
+              slotHeight={slotHeight}
+              selectedDate={selectedDate}
+            />
           </div>
         </div>
       </div>
-
       {/* Reservation Modal */}
       <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
