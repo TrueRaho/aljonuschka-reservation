@@ -7,13 +7,33 @@ import { ReservationModal } from "@/components/reservation-modal"
 import { ReservationCard } from "@/components/reservation-card"
 import { CurrentTimeIndicator } from "@/components/current-time-indicator"
 import { DatePicker } from "@/components/date-picker"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 export default function ReservationsPage() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 6, 2)) // July 2, 2025
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (status === "loading") return
+
+    if (session) {
+      // User is logged in, redirect based on role
+      if (session.user?.role === "admin") {
+        router.push("/admin-only")
+      } else if (session.user?.role === "staff") {
+        router.push("/reservations")
+      }
+    } else {
+      // User is not logged in, redirect to login
+      router.push("/login")
+    }
+  }, [session, status, router])
 
   // Generate time slots from 11:30 to 22:00 in 15-minute intervals
   const generateTimeSlots = () => {
