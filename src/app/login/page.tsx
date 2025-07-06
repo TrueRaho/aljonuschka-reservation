@@ -67,7 +67,7 @@ export default function LoginPage() {
             <Lock className="w-6 h-6 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">Aljonuschka</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-gray-400 mb-2">
             Введите пароль для доступа к системе бронирования
           </CardDescription>
         </CardHeader>
