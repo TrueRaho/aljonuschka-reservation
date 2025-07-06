@@ -7,13 +7,23 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Protect /reservations and /admin-only routes
-        if (req.nextUrl.pathname.startsWith("/reservations")) {
-          return !!token
+        const pathname = req.nextUrl.pathname
+        
+        // Страница emails доступна только для пользователей с ролью staff
+        if (pathname.startsWith("/reservations/emails")) {
+          return token?.role === "staff"
         }
-        if (req.nextUrl.pathname.startsWith("/admin-only")) {
+        
+        // Другие маршруты в разделе reservations доступны любому авторизованному пользователю
+        if (pathname.startsWith("/reservations")) {
+          return token?.role === "staff"
+        }
+        
+        // Admin-only маршруты
+        if (pathname.startsWith("/admin-only")) {
           return token?.role === "admin"
         }
+        
         return true
       },
     },

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, Fragment } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, Mail } from "lucide-react"
 import type { Reservation } from "@/types/reservation"
 import { ReservationModal } from "@/components/reservation-modal"
 import { ReservationCard } from "@/components/reservation-card"
@@ -125,6 +125,15 @@ export default function ReservationsPage() {
                 <span className="capitalize">{session.user?.role}</span>
               </div> */}
               <Button
+                onClick={() => router.push('/reservations/emails')}
+                variant="outline"
+                size="sm"
+                className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Письма
+              </Button>
+              <Button
                 onClick={handleSignOut}
                 variant="outline"
                 size="sm"
@@ -161,7 +170,7 @@ export default function ReservationsPage() {
                       style={{ minHeight: `${slotHeight}px` }}
                     >
                       {loading ? (
-                        <div className="text-gray-500 text-sm">Loading...</div>
+                        <div className="text-gray-500 text-sm">Загрузка...</div>
                       ) : (
                         slotReservations.map((reservation) => (
                           <ReservationCard
