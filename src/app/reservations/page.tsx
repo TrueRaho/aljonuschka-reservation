@@ -15,7 +15,7 @@ import { DatePicker } from "@/components/date-picker"
 export default function ReservationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 6, 2)) // July 2, 2025
+  const [selectedDate, setSelectedDate] = useState(new Date())
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
