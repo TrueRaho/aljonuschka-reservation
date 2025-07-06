@@ -42,7 +42,7 @@ export default function AdminOnlyPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading...</div>
+        <div className="text-white text-lg">Загрузка...</div>
       </div>
     )
   }
@@ -123,11 +123,11 @@ export default function AdminOnlyPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-emerald-400" />
+            {/* <Shield className="w-8 h-8 text-emerald-400" />
             <div>
               <h1 className="text-2xl font-bold text-white">Admin Security</h1>
               <p className="text-slate-400">Change your password</p>
-            </div>
+            </div> */}
           </div>
           <Button
             onClick={handleSignOut}
@@ -135,7 +135,7 @@ export default function AdminOnlyPage() {
             className="text-slate-300 hover:text-white hover:bg-slate-700"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            Выйти
           </Button>
         </div>
 
@@ -143,15 +143,15 @@ export default function AdminOnlyPage() {
         <div className="max-w-md mx-auto">
           <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
             <CardHeader className="text-center">
-              <CardTitle className="text-white text-xl">Change Password</CardTitle>
-              <CardDescription className="text-slate-400">Update your staff account password</CardDescription>
+              <CardTitle className="text-white text-xl">Поменять пароль</CardTitle>
+              <CardDescription className="text-slate-400">Поменять пароль для сотрудников</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordChange} className="space-y-6">
                 {/* Current Password */}
                 <div className="space-y-2">
                   <Label htmlFor="current-password" className="text-slate-200">
-                    Current Password
+                    Текущий пароль
                   </Label>
                   <div className="relative">
                     <Input
@@ -160,7 +160,7 @@ export default function AdminOnlyPage() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10"
-                      placeholder="Enter current admin password"
+                      placeholder="Введите текущий супер-пароль"
                       required
                     />
                     <Button
@@ -178,7 +178,7 @@ export default function AdminOnlyPage() {
                 {/* New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="new-password" className="text-slate-200">
-                    New Password
+                    Новый пароль
                   </Label>
                   <div className="relative">
                     <Input
@@ -187,7 +187,7 @@ export default function AdminOnlyPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10"
-                      placeholder="Enter new staff password"
+                      placeholder="Введите новый пароль для сотрудников"
                       required
                     />
                     <Button
@@ -205,7 +205,7 @@ export default function AdminOnlyPage() {
                 {/* Confirm New Password */}
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password" className="text-slate-200">
-                    Confirm New Password
+                    Подтвердите новый пароль
                   </Label>
                   <div className="relative">
                     <Input
@@ -214,7 +214,7 @@ export default function AdminOnlyPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10"
-                      placeholder="Confirm new staff password"
+                      placeholder="Подтвердите новый пароль для сотрудников"
                       required
                     />
                     <Button
@@ -235,7 +235,7 @@ export default function AdminOnlyPage() {
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Changing Password..." : "Change Password"}
+                  {isLoading ? "Изменение пароля..." : "Изменить пароль"}
                 </Button>
               </form>
             </CardContent>

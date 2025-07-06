@@ -43,7 +43,7 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Reservation Details</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Детали брони</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -81,7 +81,7 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
             <div className="flex items-center gap-3">
               <Users className="h-4 w-4 text-gray-400" />
               <span className="text-gray-300">
-                {reservation.guests} {reservation.guests === 1 ? "guest" : "guests"}
+                {reservation.guests} {reservation.guests === 1 ? "гость" : "гостей"}
               </span>
             </div>
 
@@ -89,7 +89,7 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
               <div className="flex items-start gap-3">
                 <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Special Requests:</p>
+                  {/* <p className="text-sm text-gray-400 mb-1">Спец запросы:</p> */}
                   <p className="text-gray-300">{reservation.special_requests}</p>
                 </div>
               </div>

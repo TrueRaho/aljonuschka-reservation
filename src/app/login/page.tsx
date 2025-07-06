@@ -25,7 +25,7 @@ export default function LoginPage() {
     try {
       // Проверяем пароль на пустоту
       if (!password.trim()) {
-        setError("Please enter a password")
+        setError("Введите пароль")
         setIsLoading(false)
         return
       }
@@ -41,7 +41,7 @@ export default function LoginPage() {
       // Проверяем результат
       if (result?.error) {
         // Если есть ошибка - показываем её
-        setError("Invalid password. Please try again.")
+        setError("Неверный пароль. Попробуйте снова.")
         setIsLoading(false)
       } else if (result?.ok) {
         // Если авторизация успешна - перенаправляем на URL из callbackUrl
@@ -70,7 +70,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-white">Aljonuschka</CardTitle>
           <CardDescription className="text-gray-400">
-            Enter your password to access the reservation system
+            Введите пароль для доступа к системе бронирования
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,7 +79,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
+                  placeholder="Введите пароль"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 pr-10"
@@ -106,14 +106,14 @@ export default function LoginPage() {
               className="w-full bg-red-500 hover:bg-red-600 text-white"
               disabled={isLoading || !password}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Вход..." : "Войти"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-500">
+          {/* <div className="mt-6 text-center text-xs text-gray-500">
             <p>Staff access: Use staff password</p>
             <p>Admin access: Use admin password</p>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>
