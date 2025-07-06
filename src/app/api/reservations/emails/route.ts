@@ -12,6 +12,11 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    
+    // Проверка роли staff
+    if (session.user.role !== "staff") {
+      return NextResponse.json({ error: "Forbidden: Staff access only" }, { status: 403 })
+    }
 
     // Get all email reservations with counts for each date
     const emailReservations = await sql`

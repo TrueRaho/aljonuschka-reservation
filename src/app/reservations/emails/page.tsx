@@ -33,13 +33,13 @@ export default function EmailReservationsPage() {
         const data = await response.json()
         setEmailReservations(data)
       } else {
-        throw new Error("Failed to fetch email reservations")
+        throw new Error("Не вышло достать email-записи")
       }
     } catch (error) {
       console.error("Failed to fetch email reservations:", error)
       toast({
         title: "Error",
-        description: "Failed to load email reservations",
+        description: "Не вышло загрузить email-записи",
         variant: "destructive",
       })
     } finally {
@@ -70,17 +70,17 @@ export default function EmailReservationsPage() {
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Reservation confirmed successfully",
+          description: "Запись подтверждена",
         })
         await fetchEmailReservations()
       } else {
-        throw new Error("Failed to confirm reservation")
+        throw new Error("Не вышло подтвердить запись")
       }
     } catch (error) {
       console.error("Error confirming reservation:", error)
       toast({
         title: "Error",
-        description: "Failed to confirm reservation",
+        description: "Не вышло подтвердить запись",
         variant: "destructive",
       })
     }
@@ -97,17 +97,17 @@ export default function EmailReservationsPage() {
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Reservation rejected",
+          description: "Запись отклонена",
         })
         await fetchEmailReservations()
       } else {
-        throw new Error("Failed to reject reservation")
+        throw new Error("Не вышло отклонить запись")
       }
     } catch (error) {
       console.error("Error rejecting reservation:", error)
       toast({
         title: "Error",
-        description: "Failed to reject reservation",
+        description: "Не вышло отклонить запись",
         variant: "destructive",
       })
     }
@@ -124,11 +124,11 @@ export default function EmailReservationsPage() {
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Rejection undone - reservation confirmed",
+          description: "Отклонение отменено - запись подтверждена",
         })
         await fetchEmailReservations()
       } else {
-        throw new Error("Failed to undo rejection")
+        throw new Error("Не вышло отменить отклонение")
       }
     } catch (error) {
       console.error("Error undoing rejection:", error)
@@ -143,7 +143,7 @@ export default function EmailReservationsPage() {
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="text-white">Загрузка...</div>
       </div>
     )
   }
@@ -165,18 +165,18 @@ export default function EmailReservationsPage() {
               onClick={() => router.push("/reservations")}
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:bg-gray-500 bg-transparent"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Schedule
+              Назад к расписанию
             </Button>
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               <Mail className="w-6 h-6 text-blue-400" />
               <div>
                 <h1 className="text-2xl font-bold">Email Reservations</h1>
                 <p className="text-gray-400">Manage incoming reservation requests</p>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <Button
@@ -187,12 +187,12 @@ export default function EmailReservationsPage() {
             className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            Обновить
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-800 rounded-lg p-4">
             <p className="text-gray-400 text-sm">Pending Requests</p>
             <p className="text-2xl font-bold text-yellow-400">{pendingReservations.length}</p>
@@ -209,16 +209,16 @@ export default function EmailReservationsPage() {
               {emailReservations.filter((r) => r.status === "rejected").length}
             </p>
           </div>
-        </div>
+        </div> */}
 
         {/* Email Reservations List */}
         <div className="space-y-6">
           {/* Pending Reservations */}
           {pendingReservations.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-yellow-400">
+              {/* <h2 className="text-lg font-semibold mb-4 text-yellow-400">
                 Pending Requests ({pendingReservations.length})
-              </h2>
+              </h2> */}
               <div className="space-y-4">
                 {pendingReservations.map((reservation) => (
                   <EmailReservationCard
@@ -236,9 +236,9 @@ export default function EmailReservationsPage() {
           {/* Processed Reservations */}
           {processedReservations.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-gray-400">
+              {/* <h2 className="text-lg font-semibold mb-4 text-gray-400">
                 Processed Requests ({processedReservations.length})
-              </h2>
+              </h2> */}
               <div className="space-y-4">
                 {processedReservations.map((reservation) => (
                   <EmailReservationCard
