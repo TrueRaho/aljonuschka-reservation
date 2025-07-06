@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
         reservation_date,
         reservation_time,
         guests,
-        special_requests
-      FROM reservations 
+        special_requests,
+        status
+      FROM reservation_emails 
       WHERE reservation_date = ${date}
       ORDER BY reservation_time ASC
     `

@@ -25,7 +25,8 @@ export async function GET() {
         reservation_date,
         COUNT(*) as confirmed_count,
         COALESCE(SUM(guests), 0) as total_guests
-      FROM reservations 
+      FROM reservation_emails 
+      WHERE status = 'confirmed' 
       GROUP BY reservation_date
     )
     SELECT 

@@ -6,7 +6,7 @@ import { useEffect, useState, Fragment } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { LogOut, Mail } from "lucide-react"
-import type { Reservation } from "@/types/reservation"
+import type { EmailReservation } from "@/types/email-reservations"
 import { ReservationModal } from "@/components/reservation-modal"
 import { ReservationCard } from "@/components/reservation-card"
 import { CurrentTimeIndicator } from "@/components/current-time-indicator"
@@ -16,8 +16,8 @@ export default function ReservationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [reservations, setReservations] = useState<Reservation[]>([])
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const [reservations, setReservations] = useState<EmailReservation[]>([])
+  const [selectedReservation, setSelectedReservation] = useState<EmailReservation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -69,7 +69,11 @@ export default function ReservationsPage() {
         const response = await fetch(`/api/reservations?date=${dateStr}`)
         if (response.ok) {
           const data = await response.json()
-          setReservations(data)
+          // Фильтрация только подтверждённых резерваций
+          const confirmedReservations = data.filter(
+            (reservation: EmailReservation) => reservation.status === "confirmed"
+          )
+          setReservations(confirmedReservations)
         }
       } catch (error) {
         console.error("Failed to fetch reservations:", error)
@@ -88,7 +92,7 @@ export default function ReservationsPage() {
     })
   }
 
-  const handleReservationClick = (reservation: Reservation) => {
+  const handleReservationClick = (reservation: EmailReservation) => {
     setSelectedReservation(reservation)
     setIsModalOpen(true)
   }

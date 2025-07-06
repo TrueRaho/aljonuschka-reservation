@@ -1,9 +1,9 @@
 "use client"
 
-import type { Reservation } from "@/types/reservation"
+import type { EmailReservation } from "@/types/email-reservations"
 
 interface ReservationCardProps {
-  reservation: Reservation
+  reservation: EmailReservation
   onClick: () => void
 }
 

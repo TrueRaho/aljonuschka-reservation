@@ -3,10 +3,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Phone, Mail, Calendar, Users, Clock, MessageSquare } from "lucide-react"
-import type { Reservation } from "@/types/reservation"
+import type { EmailReservation } from "@/types/email-reservations"
 
 interface ReservationModalProps {
-  reservation: Reservation | null
+  reservation: EmailReservation | null
   isOpen: boolean
   onClose: () => void
 }
