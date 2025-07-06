@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, Fragment } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { LogOut, User } from "lucide-react"
+import { LogOut } from "lucide-react"
 import type { Reservation } from "@/types/reservation"
 import { ReservationModal } from "@/components/reservation-modal"
 import { ReservationCard } from "@/components/reservation-card"
@@ -120,10 +120,10 @@ export default function ReservationsPage() {
               <DatePicker date={selectedDate} onDateChange={setSelectedDate} />
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-gray-400">
+              {/* <div className="flex items-center gap-2 text-gray-400">
                 <User className="w-4 h-4" />
                 <span className="capitalize">{session.user?.role}</span>
-              </div>
+              </div> */}
               <Button
                 onClick={handleSignOut}
                 variant="outline"
@@ -131,7 +131,7 @@ export default function ReservationsPage() {
                 className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                Выйти
               </Button>
             </div>
           </div>
