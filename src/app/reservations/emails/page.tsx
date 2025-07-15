@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Mail, RefreshCw } from "lucide-react"
 import { EmailReservationCard } from "@/components/email-reservation-card"
@@ -26,7 +26,7 @@ export default function EmailReservationsPage() {
     }
   }, [session, status, router, toast])
 
-  const fetchEmailReservations = async () => {
+  const fetchEmailReservations = useCallback(async () => {
     try {
       const response = await fetch("/api/reservations/emails")
       if (response.ok) {
@@ -46,13 +46,13 @@ export default function EmailReservationsPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [toast])
 
   useEffect(() => {
     if (session) {
       fetchEmailReservations()
     }
-  }, [session])
+  }, [session, fetchEmailReservations])
 
   const handleRefresh = async () => {
     setRefreshing(true)

@@ -1,16 +1,16 @@
 -- Create table for pending reservation emails
 CREATE TABLE IF NOT EXISTS reservation_emails (
-  id SERIAL PRIMARY KEY,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  reservation_date DATE NOT NULL,
-  reservation_time TIME NOT NULL,
-  guests INTEGER NOT NULL,
-  special_requests TEXT,
-  received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'rejected'))
+    id BIGINT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    reservation_date DATE NOT NULL,
+    reservation_time TIME NOT NULL,
+    guests INTEGER NOT NULL,
+    special_requests TEXT,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'rejected'))
 );
 
 -- Insert sample email reservation requests
