@@ -56,7 +56,70 @@ export default function EmailReservationsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchEmailReservations()
+    
+    try {
+      // Шаг 1: Получаем новые письма через IMAP
+      console.log('📡 Fetching emails from IMAP...')
+      const imapResponse = await fetch('/api/reservations/emails/IMAP')
+      
+      if (!imapResponse.ok) {
+        throw new Error(`IMAP fetch failed: ${imapResponse.statusText}`)
+      }
+      
+      const imapData = await imapResponse.json()
+      console.log(`📬 Found ${imapData.emailsFound} new emails`)
+      
+      if (imapData.emailsFound === 0) {
+        toast({
+          title: "Информация",
+          description: "Новых писем не найдено",
+        })
+        await fetchEmailReservations()
+        return
+      }
+      
+      // Шаг 2: Импортируем найденные письма в базу данных
+      console.log('💾 Importing emails to database...')
+      const dbResponse = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails: imapData.emails }),
+      })
+      
+      if (!dbResponse.ok) {
+        throw new Error(`Database import failed: ${dbResponse.statusText}`)
+      }
+      
+      const dbData = await dbResponse.json()
+      console.log(`📊 Import result: ${dbData.processedCount}/${dbData.totalEmails} processed`)
+      
+      // Шаг 3: Показываем результат пользователю
+      if (dbData.success) {
+        toast({
+          title: "Успех",
+          description: `Обработано ${dbData.processedCount} новых резерваций`,
+        })
+      } else {
+        toast({
+          title: "Частичный успех",
+          description: `Обработано ${dbData.processedCount} из ${dbData.totalEmails}. Ошибок: ${dbData.errorCount}`,
+          variant: "destructive",
+        })
+      }
+      
+      // Шаг 4: Обновляем список резерваций
+      await fetchEmailReservations()
+      
+    } catch (error) {
+      console.error('❌ Refresh error:', error)
+      toast({
+        title: "Ошибка",
+        description: `Не удалось обновить резервации: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive",
+      })
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   const handleConfirm = async (emailId: number) => {
