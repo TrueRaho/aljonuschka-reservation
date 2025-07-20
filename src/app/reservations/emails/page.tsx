@@ -124,25 +124,52 @@ export default function EmailReservationsPage() {
 
   const handleConfirm = async (emailId: number) => {
     try {
+      // Шаг 1: Обновляем статус в базе данных
       const response = await fetch("/api/reservations/emails/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emailId }),
       })
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Запись подтверждена",
-        })
-        await fetchEmailReservations()
-      } else {
+      if (!response.ok) {
         throw new Error("Не вышло подтвердить запись")
       }
+
+      // Шаг 2: Отправляем SMTP-письмо клиенту
+      try {
+        const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: emailId, type: "confirmed" }),
+        })
+
+        if (smtpResponse.ok) {
+          toast({
+            title: "Успех",
+            description: "Запись подтверждена и письмо отправлено клиенту",
+          })
+        } else {
+          // Статус обновлен, но письмо не отправлено
+          toast({
+            title: "Частичный успех",
+            description: "Запись подтверждена, но не удалось отправить письмо клиенту",
+            variant: "destructive",
+          })
+        }
+      } catch (smtpError) {
+        console.error("SMTP Error:", smtpError)
+        toast({
+          title: "Частичный успех",
+          description: "Запись подтверждена, но не удалось отправить письмо клиенту",
+          variant: "destructive",
+        })
+      }
+
+      await fetchEmailReservations()
     } catch (error) {
       console.error("Error confirming reservation:", error)
       toast({
-        title: "Error",
+        title: "Ошибка",
         description: "Не вышло подтвердить запись",
         variant: "destructive",
       })
@@ -151,25 +178,52 @@ export default function EmailReservationsPage() {
 
   const handleReject = async (emailId: number) => {
     try {
+      // Шаг 1: Обновляем статус в базе данных
       const response = await fetch("/api/reservations/emails/reject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emailId }),
       })
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Запись отклонена",
-        })
-        await fetchEmailReservations()
-      } else {
+      if (!response.ok) {
         throw new Error("Не вышло отклонить запись")
       }
+
+      // Шаг 2: Отправляем SMTP-письмо клиенту
+      try {
+        const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: emailId, type: "rejected" }),
+        })
+
+        if (smtpResponse.ok) {
+          toast({
+            title: "Успех",
+            description: "Запись отклонена и письмо отправлено клиенту",
+          })
+        } else {
+          // Статус обновлен, но письмо не отправлено
+          toast({
+            title: "Частичный успех",
+            description: "Запись отклонена, но не удалось отправить письмо клиенту",
+            variant: "destructive",
+          })
+        }
+      } catch (smtpError) {
+        console.error("SMTP Error:", smtpError)
+        toast({
+          title: "Частичный успех",
+          description: "Запись отклонена, но не удалось отправить письмо клиенту",
+          variant: "destructive",
+        })
+      }
+
+      await fetchEmailReservations()
     } catch (error) {
       console.error("Error rejecting reservation:", error)
       toast({
-        title: "Error",
+        title: "Ошибка",
         description: "Не вышло отклонить запись",
         variant: "destructive",
       })
@@ -178,26 +232,53 @@ export default function EmailReservationsPage() {
 
   const handleUndo = async (emailId: number) => {
     try {
+      // Шаг 1: Обновляем статус в базе данных (отменяем отклонение)
       const response = await fetch("/api/reservations/emails/undo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emailId }),
       })
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Отклонение отменено - запись подтверждена",
-        })
-        await fetchEmailReservations()
-      } else {
+      if (!response.ok) {
         throw new Error("Не вышло отменить отклонение")
       }
+
+      // Шаг 2: Отправляем SMTP-письмо клиенту о подтверждении
+      try {
+        const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: emailId, type: "undo" }),
+        })
+
+        if (smtpResponse.ok) {
+          toast({
+            title: "Успех",
+            description: "Отклонение отменено - запись подтверждена и письмо отправлено клиенту",
+          })
+        } else {
+          // Статус обновлен, но письмо не отправлено
+          toast({
+            title: "Частичный успех",
+            description: "Отклонение отменено, но не удалось отправить письмо клиенту",
+            variant: "destructive",
+          })
+        }
+      } catch (smtpError) {
+        console.error("SMTP Error:", smtpError)
+        toast({
+          title: "Частичный успех",
+          description: "Отклонение отменено, но не удалось отправить письмо клиенту",
+          variant: "destructive",
+        })
+      }
+
+      await fetchEmailReservations()
     } catch (error) {
       console.error("Error undoing rejection:", error)
       toast({
-        title: "Error",
-        description: "Failed to undo rejection",
+        title: "Ошибка",
+        description: "Не вышло отменить отклонение",
         variant: "destructive",
       })
     }
