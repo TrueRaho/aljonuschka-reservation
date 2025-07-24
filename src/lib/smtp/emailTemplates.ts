@@ -16,43 +16,50 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
       case 'confirmed':
         return {
           subject: 'Bestätigung Ihrer Reservierung im Restaurant AljonuschkA',
-          html: `Sehr geehrte/r ${fullName},
-                wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen Ihre Reservierung am ${formattedDate} um ${formattedTime} Uhr.  
-
-                Sollten Sie Fragen oder besondere Wünsche für einen bevorstehenden Besuch haben, zögern Sie bitte nicht, uns zu kontaktieren.
-
-
-                Mit freundlichen Grüßen 
-                Team „AljonuschkA"`
+          html: `<html>
+                  <body>
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                      <h2>Reservierungsbestätigung</h2>
+                      <p>Sehr geehrte/r ${fullName},</p>
+                      <p>wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen Ihre Reservierung am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong>.</p>
+                      <p>Sollten Sie Fragen oder besondere Wünsche haben, zögern Sie bitte nicht, uns zu kontaktieren.</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                    </div>
+                  </body>
+                </html>`
         }
       case 'rejected':
         return {
           subject: 'Ihre Reservierungsanfrage im Restaurant AljonuschkA',
-          html: `Sehr geehrte/r ${fullName},
-                leider haben wir für den von Ihnen gewählten Termin am ${formattedDate} um ${formattedTime} Uhr keine Plätze frei, wir bitten um Entschuldigung.
-
-                Wenn ein Tisch frei wird, werden wir Sie umgehend informieren.
-
-                Ich danke Ihnen im Voraus für Ihr Verständnis.
-
-
-
-                Mit freundlichen Grüßen 
-                Team „AljonuschkA"`
+          html: `<html>
+                  <body>
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                      <h2>Reservierungsanfrage abgelehnt</h2>
+                      <p>Sehr geehrte/r ${fullName},</p>
+                      <p>leider haben wir für den von Ihnen gewählten Termin am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> keine Plätze frei, wir bitten um Entschuldigung.</p>
+                      <p>Wenn ein Tisch frei wird, werden wir Sie umgehend informieren.</p>
+                      <p>Ich danke Ihnen im Voraus für Ihr Verständnis.</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                    </div>
+                  </body>
+                </html>`
         }
       case 'undo':
         return {
           subject: 'Verfügbarkeit für Ihre Reservierungsanfrage im Restaurant AljonuschkA',
-          html: `Sehr geehrte/r ${fullName},
-                Sie wollten vorher unser Restaurant am ${formattedDate} um ${formattedTime} Uhr besuchen, jetzt können wir einen Tisch für Sie reservieren. 
-
-                Wenn Sie einverstanden sind, bestätigen Sie bitte.
-
-                Wir freuen uns darauf, von Ihnen zu hören.
-
-
-                Mit freundlichen Grüßen 
-                Team „AljonuschkA"`
+          html: `<html>
+                  <body>
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                      <h2>Verfügbarkeitsbenachrichtigung</h2>
+                      <p>Sehr geehrte/r ${fullName},</p>
+                      <p>Sie wollten vorher unser Restaurant am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> besuchen, jetzt können wir einen Tisch für Sie reservieren.</p>
+                      <p>Wenn Sie einverstanden sind, bestätigen Sie bitte.</p>
+                      <p><a href="#" style="display: inline-block; padding: 10px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px;">Jetzt bestätigen</a></p>
+                      <p>Wir freuen uns darauf, von Ihnen zu hören.</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                    </div>
+                  </body>
+                </html>`
         }
       default:
         throw new Error('Unknown email type')
