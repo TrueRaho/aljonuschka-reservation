@@ -18,7 +18,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
           subject: 'Bestätigung Ihrer Reservierung im Restaurant AljonuschkA',
           html: `<html>
                   <body>
-                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 20px; max-width: 600px; margin: 20px auto; background-color: #fafafa;">
                       <h2>Reservierungsbestätigung</h2>
                       <p>Sehr geehrte/r ${fullName},</p>
                       <p>wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen Ihre Reservierung am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong>.</p>
@@ -33,7 +33,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
           subject: 'Ihre Reservierungsanfrage im Restaurant AljonuschkA',
           html: `<html>
                   <body>
-                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 20px; max-width: 600px; margin: 20px auto; background-color: #fafafa;">
                       <h2>Reservierungsanfrage abgelehnt</h2>
                       <p>Sehr geehrte/r ${fullName},</p>
                       <p>leider haben wir für den von Ihnen gewählten Termin am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> keine Plätze frei, wir bitten um Entschuldigung.</p>
@@ -49,7 +49,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
           subject: 'Verfügbarkeit für Ihre Reservierungsanfrage im Restaurant AljonuschkA',
           html: `<html>
                   <body>
-                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+                    <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333; border: 1px solid #ccc; border-radius: 8px; padding: 20px; max-width: 600px; margin: 20px auto; background-color: #fafafa;">
                       <h2>Verfügbarkeitsbenachrichtigung</h2>
                       <p>Sehr geehrte/r ${fullName},</p>
                       <p>Sie wollten vorher unser Restaurant am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> besuchen, jetzt können wir einen Tisch für Sie reservieren.</p>
