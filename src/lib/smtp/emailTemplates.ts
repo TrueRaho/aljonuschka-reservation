@@ -54,7 +54,6 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
                       <p>Sehr geehrte/r ${fullName},</p>
                       <p>Sie wollten vorher unser Restaurant am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> besuchen, jetzt können wir einen Tisch für Sie reservieren.</p>
                       <p>Wenn Sie einverstanden sind, bestätigen Sie bitte.</p>
-                      <p><a href="#" style="display: inline-block; padding: 10px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px;">Jetzt bestätigen</a></p>
                       <p>Wir freuen uns darauf, von Ihnen zu hören.</p>
                       <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
                     </div>
