@@ -596,6 +596,73 @@ class IMAPFetcher {
       await client.logout()
     }
   }
+
+  /**
+   * Сохраняет отправленное письмо в папку Sent через IMAP
+   */
+  async appendToSent(emailData: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<boolean> {
+    const client = new ImapFlow({
+      host: this.config.server,
+      port: this.config.port,
+      secure: true,
+      auth: {
+        user: this.config.user,
+        pass: this.config.password,
+      },
+    })
+
+    try {
+      await client.connect()
+      
+      // Проверяем существование папки Sent (может называться по-разному)
+      const sentFolders = ['Sent', 'INBOX.Sent', 'Sent Items', 'Отправленные']
+      let sentFolder = 'Sent' // по умолчанию
+      
+      for (const folder of sentFolders) {
+        try {
+          await client.getMailboxLock(folder)
+          sentFolder = folder
+          break
+        } catch {
+          // Папка не существует, пробуем следующую
+          continue
+        }
+      }
+
+      // Формируем RFC 2822 сообщение
+      const date = new Date().toUTCString()
+      const messageId = `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@${this.config.server}>`
+      
+      const rawMessage = [
+        `From: ${emailData.from}`,
+        `To: ${emailData.to}`,
+        `Subject: ${emailData.subject}`,
+        `Date: ${date}`,
+        `Message-ID: ${messageId}`,
+        `MIME-Version: 1.0`,
+        `Content-Type: text/html; charset=utf-8`,
+        `Content-Transfer-Encoding: quoted-printable`,
+        '',
+        emailData.html
+      ].join('\r\n')
+
+      // Добавляем письмо в папку Sent с флагом \Seen
+      await client.append(sentFolder, rawMessage, ['\\Seen'])
+      console.log(`📤 Email appended to ${sentFolder} folder`)
+      return true
+      
+    } catch (error) {
+      console.error('❌ Error appending email to Sent folder:', error)
+      return false
+    } finally {
+      await client.logout()
+    }
+  }
 }
 
 export const imapFetcher = new IMAPFetcher()

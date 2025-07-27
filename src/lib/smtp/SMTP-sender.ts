@@ -1,4 +1,5 @@
 import nodemailer, { SentMessageInfo } from 'nodemailer'
+import { imapFetcher } from '../IMAP-fetcher'
 
 interface EmailConfig {
   to: string;
@@ -38,6 +39,26 @@ export async function sendEmail({ to, subject, html }: EmailConfig): Promise<Sen
     })
 
     console.log('📧 Email sent successfully:', info.messageId)
+    
+    // Сохраняем отправленное письмо в папку Sent через IMAP
+    try {
+      const imapSuccess = await imapFetcher.appendToSent({
+        from: `"Aljonuschka Restaurant" <${email}>`,
+        to,
+        subject,
+        html,
+      })
+      
+      if (imapSuccess) {
+        console.log('📤 Email successfully saved to Sent folder')
+      } else {
+        console.warn('⚠️ Email sent but failed to save to Sent folder')
+      }
+    } catch (imapError) {
+      console.warn('⚠️ Email sent but IMAP save failed:', imapError)
+      // Не прерываем выполнение, так как письмо уже отправлено
+    }
+    
     return info
   } catch (error) {
     console.error('❌ Failed to send email:', error)
