@@ -50,11 +50,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
 
   const formatTime = (timeString: string | null) => {
     if (!timeString) return "Time not specified"
-    const [hours, minutes] = timeString.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour % 12 || 12
-    return `${displayHour}:${minutes} ${ampm}`
+    return timeString
   }
 
   const getCardStyles = () => {

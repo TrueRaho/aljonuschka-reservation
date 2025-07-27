@@ -50,14 +50,7 @@ export async function GET() {
         WHEN re.status = 'pending' THEN 0 
         ELSE 1 
       END,
-      CASE 
-        WHEN re.status = 'pending' THEN re.reservation_date 
-        ELSE NULL 
-      END ASC,
-      CASE 
-        WHEN re.status != 'pending' THEN re.reservation_date 
-        ELSE NULL 
-      END DESC
+      re.uid DESC
   `
 
     return NextResponse.json(emailReservations)
