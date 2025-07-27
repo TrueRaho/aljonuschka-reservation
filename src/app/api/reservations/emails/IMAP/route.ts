@@ -20,28 +20,47 @@ export async function GET() {
       )
     }
 
-    console.log('📡 Starting IMAP email fetch...')
-
-    // Получаем последний обработанный UID из базы данных
-    const lastProcessedUid = await databaseImporter.getLastProcessedUid()
-    console.log(`🔍 Last processed UID: ${lastProcessedUid}`)
-
-    // Получаем новые письма через IMAP
-    const parsedEmails = await imapFetcher.fetchEmails(lastProcessedUid)
-
-    console.log(`📬 Found ${parsedEmails.length} new emails`)
-
-    return NextResponse.json({
+    console.log('🚀 Starting optimized IMAP email fetch and processing...')
+    
+    // Используем новый оптимизированный метод
+    const processingResult = await imapFetcher.fetchAndProcessEmails()
+    
+    // Импортируем новые резервации в базу данных
+    let importResult = null
+    if (processingResult.newReservations.length > 0) {
+      console.log(`📥 Importing ${processingResult.newReservations.length} new reservations...`)
+      importResult = await databaseImporter.importReservations(processingResult.newReservations)
+    }
+    
+    const response = {
       success: true,
-      emailsFound: parsedEmails.length,
-      lastProcessedUid,
-      emails: parsedEmails,
+      emailsFound: processingResult.newReservations.length,
+      totalProcessed: processingResult.processedCount,
+      confirmedByFlags: processingResult.confirmedCount,
+      errors: processingResult.errors.length,
+      imported: importResult?.processedCount || 0,
+      emails: processingResult.newReservations,
+      details: {
+        errors: processingResult.errors,
+        importErrors: importResult?.errors || []
+      }
+    }
+    
+    console.log('✅ Optimized processing completed:', {
+      totalProcessed: response.totalProcessed,
+      newReservations: response.emailsFound,
+      confirmedByFlags: response.confirmedByFlags,
+      imported: response.imported
     })
+    
+    return NextResponse.json(response)
   } catch (error) {
-    console.error('❌ IMAP fetch error:', error)
+    console.error('❌ Error in optimized IMAP processing:', error)
+    
     return NextResponse.json(
       {
-        error: 'Failed to fetch emails from IMAP server',
+        success: false,
+        error: 'Failed to process emails from IMAP server',
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

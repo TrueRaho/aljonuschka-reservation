@@ -1,4 +1,5 @@
 import { ImapFlow } from 'imapflow'
+import { DatabaseImporter } from './importDB'
 
 export interface ParsedEmailReservation {
   uid: number
@@ -13,6 +14,26 @@ export interface ParsedEmailReservation {
   receivedAt: string // ISO string
 }
 
+export interface EmailProcessingResult {
+  newReservations: ParsedEmailReservation[]
+  processedCount: number
+  confirmedCount: number
+  errors: string[]
+}
+
+export interface EmailFlags {
+  seen: boolean
+  answered: boolean
+}
+
+interface ImapMessage {
+  source?: Buffer | string
+  envelope?: {
+    date?: Date
+  }
+  flags?: Set<string>
+}
+
 interface ImapConfig {
   server: string
   port: number
@@ -22,6 +43,7 @@ interface ImapConfig {
 
 class IMAPFetcher {
   private config: ImapConfig
+  private dbImporter: DatabaseImporter
 
   constructor() {
     this.config = {
@@ -30,6 +52,7 @@ class IMAPFetcher {
       user: process.env.EMAIL!,
       password: process.env.EMAIL_PASSWORD!,
     }
+    this.dbImporter = new DatabaseImporter()
   }
 
   private stripHtmlTags(text: string): string {
@@ -154,6 +177,169 @@ class IMAPFetcher {
       guests,
       specialRequests,
       receivedAt: receivedAt.toISOString(),
+    }
+  }
+
+  async fetchAndProcessEmails(): Promise<EmailProcessingResult> {
+    const result: EmailProcessingResult = {
+      newReservations: [],
+      processedCount: 0,
+      confirmedCount: 0,
+      errors: []
+    }
+
+    const client = new ImapFlow({
+      host: this.config.server,
+      port: this.config.port,
+      secure: true,
+      auth: {
+        user: this.config.user,
+        pass: this.config.password,
+      },
+    })
+
+    try {
+      await client.connect()
+      const mailbox = await client.getMailboxLock('INBOX')
+
+      try {
+        // 1. Получаем максимальный UID из базы данных
+        const maxUidFromDb = await this.dbImporter.getMaxUidFromDatabase()
+        console.log(`📊 Max UID from database: ${maxUidFromDb}`)
+
+        // 2. Поиск писем с нужной темой
+        const searchResult = await client.search({
+          subject: '[aljonuschka] Reservierungsanfragen - neue Einreichung',
+        })
+
+        if (!searchResult || !Array.isArray(searchResult) || searchResult.length === 0) {
+          console.log('📭 No emails found with the specified subject')
+          return result
+        }
+
+        // 3. Сортируем UID по убыванию (новые сначала)
+        const uids = Array.from(searchResult).sort((a, b) => (b as number) - (a as number))
+        console.log(`📬 Found ${uids.length} emails to process`)
+
+        // 4. Обрабатываем письма до достижения maxUidFromDb
+        for (const uid of uids) {
+          const numericUid = uid as number
+          
+          // Останавливаемся, если достигли максимального UID из БД
+          if (numericUid <= maxUidFromDb) {
+            console.log(`🛑 Stopped at UID ${numericUid}, already processed (max DB UID: ${maxUidFromDb})`)
+            break
+          }
+
+          try {
+            // Получаем сообщение с флагами
+            const message = await client.fetchOne(numericUid, {
+              envelope: true,
+              bodyStructure: true,
+              source: true,
+              flags: true
+            })
+
+            if (!message || typeof message === 'boolean') {
+              console.log(`❌ Message not found for UID ${numericUid}`)
+              continue
+            }
+
+            result.processedCount++
+
+            // Проверяем флаги \Seen или \Answered
+            const flags = this.extractEmailFlags(message.flags)
+            const isReadOrAnswered = flags.seen || flags.answered
+
+            console.log(`📧 UID ${numericUid}: seen=${flags.seen}, answered=${flags.answered}`)
+
+            if (isReadOrAnswered) {
+              // Если письмо уже прочитано или отвечено, обновляем статус в БД
+              const exists = await this.dbImporter.checkReservationExists(numericUid)
+              if (exists) {
+                await this.dbImporter.updateReservationStatus(numericUid, 'confirmed')
+                result.confirmedCount++
+                console.log(`✅ UID ${numericUid} marked as confirmed (read/answered)`)
+              }
+              
+              // Убеждаемся, что письмо помечено как прочитанное
+              if (!flags.seen) {
+                await client.messageFlagsAdd(numericUid, ['\\Seen'])
+                console.log(`👁️ UID ${numericUid} marked as seen`)
+              }
+            } else {
+              // Обрабатываем как новое письмо
+              const parsedReservation = await this.parseEmailMessage(message, numericUid)
+              if (parsedReservation) {
+                result.newReservations.push(parsedReservation)
+                console.log(`📝 UID ${numericUid} parsed as new reservation`)
+              }
+            }
+          } catch (error) {
+            const errorMessage = `Error processing UID ${numericUid}: ${error instanceof Error ? error.message : String(error)}`
+            result.errors.push(errorMessage)
+            console.error(`❌ ${errorMessage}`)
+          }
+        }
+
+        console.log(`📈 Processing completed: ${result.processedCount} processed, ${result.newReservations.length} new, ${result.confirmedCount} confirmed, ${result.errors.length} errors`)
+        return result
+      } finally {
+        mailbox.release()
+      }
+    } finally {
+      await client.logout()
+    }
+  }
+
+  private extractEmailFlags(flags?: Set<string>): EmailFlags {
+    if (!flags) {
+      return { seen: false, answered: false }
+    }
+    
+    return {
+      seen: flags.has('\\Seen'),
+      answered: flags.has('\\Answered')
+    }
+  }
+
+  private async parseEmailMessage(message: ImapMessage, uid: number): Promise<ParsedEmailReservation | null> {
+    try {
+      if (!message.source) {
+        console.log(`❌ No source for UID ${uid}`)
+        return null
+      }
+
+      // Парсим email - source может быть Buffer или string
+      let emailText: string
+      if (Buffer.isBuffer(message.source)) {
+        emailText = message.source.toString('utf-8')
+      } else if (typeof message.source === 'string') {
+        emailText = message.source
+      } else {
+        console.log(`❌ Unexpected source type for UID ${uid}: ${typeof message.source}`)
+        return null
+      }
+      
+      // Извлекаем дату получения
+      const receivedAt = message.envelope?.date || new Date()
+
+      // Извлекаем тело письма
+      const body = this.extractEmailBody(emailText)
+      
+      if (!body) {
+        console.log(`❌ No body found for UID ${uid}`)
+        return null
+      }
+
+      // Парсим данные резервации
+      const parsedData = this.parseBody(body, receivedAt)
+      parsedData.uid = uid
+      
+      return parsedData
+    } catch (error) {
+      console.error(`❌ Error parsing email UID ${uid}:`, error)
+      return null
     }
   }
 

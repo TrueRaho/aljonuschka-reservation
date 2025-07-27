@@ -58,56 +58,52 @@ export default function EmailReservationsPage() {
     setRefreshing(true)
     
     try {
-      // Шаг 1: Получаем новые письма через IMAP
-      console.log('📡 Fetching emails from IMAP...')
-      const imapResponse = await fetch('/api/reservations/emails/IMAP')
+      // Получаем и обрабатываем письма через оптимизированный IMAP роут
+      console.log('🚀 Fetching and processing emails from IMAP...')
+      const response = await fetch('/api/reservations/emails/IMAP')
       
-      if (!imapResponse.ok) {
-        throw new Error(`IMAP fetch failed: ${imapResponse.statusText}`)
+      if (!response.ok) {
+        throw new Error(`IMAP processing failed: ${response.statusText}`)
       }
       
-      const imapData = await imapResponse.json()
-      console.log(`📬 Found ${imapData.emailsFound} new emails`)
-      
-      if (imapData.emailsFound === 0) {
-        toast({
-          title: "Информация",
-          description: "Новых писем не найдено",
-        })
-        await fetchEmailReservations()
-        return
-      }
-      
-      // Шаг 2: Импортируем найденные письма в базу данных
-      console.log('💾 Importing emails to database...')
-      const dbResponse = await fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emails: imapData.emails }),
+      const data = await response.json()
+      console.log('📊 Processing result:', {
+        totalProcessed: data.totalProcessed,
+        newReservations: data.emailsFound,
+        confirmedByFlags: data.confirmedByFlags,
+        imported: data.imported
       })
       
-      if (!dbResponse.ok) {
-        throw new Error(`Database import failed: ${dbResponse.statusText}`)
-      }
-      
-      const dbData = await dbResponse.json()
-      console.log(`📊 Import result: ${dbData.processedCount}/${dbData.totalEmails} processed`)
-      
-      // Шаг 3: Показываем результат пользователю
-      if (dbData.success) {
-        toast({
-          title: "Успех",
-          description: `Обработано ${dbData.processedCount} новых резерваций`,
-        })
+      // Показываем результат пользователю
+      if (data.success) {
+        if (data.totalProcessed === 0) {
+          toast({
+            title: "Информация",
+            description: "Новых писем не найдено",
+          })
+        } else {
+          const messages = []
+          if (data.emailsFound > 0) {
+            messages.push(`${data.emailsFound} новых резерваций`)
+          }
+          if (data.confirmedByFlags > 0) {
+            messages.push(`${data.confirmedByFlags} подтверждено автоматически`)
+          }
+          
+          toast({
+            title: "Успех",
+            description: `Обработано ${data.totalProcessed} писем: ${messages.join(', ')}`,
+          })
+        }
       } else {
         toast({
-          title: "Частичный успех",
-          description: `Обработано ${dbData.processedCount} из ${dbData.totalEmails}. Ошибок: ${dbData.errorCount}`,
+          title: "Ошибка обработки",
+          description: `Ошибок: ${data.errors}. Проверьте логи для деталей.`,
           variant: "destructive",
         })
       }
       
-      // Шаг 4: Обновляем список резерваций
+      // Обновляем список резерваций
       await fetchEmailReservations()
       
     } catch (error) {

@@ -134,6 +134,37 @@ export class DatabaseImporter {
       return 0
     }
   }
+
+  async updateReservationStatus(uid: number, status: 'pending' | 'confirmed' | 'rejected'): Promise<boolean> {
+    try {
+      await sql`
+        UPDATE reservation_emails 
+        SET status = ${status}, updated_at = NOW()
+        WHERE id = ${uid}
+      `
+      console.log(`✅ Updated UID ${uid} status to ${status}`)
+      return true
+    } catch (error) {
+      console.error(`❌ Error updating status for UID ${uid}:`, error)
+      return false
+    }
+  }
+
+  async getMaxUidFromDatabase(): Promise<number> {
+    return this.getLastProcessedUid()
+  }
+
+  async checkReservationExists(uid: number): Promise<boolean> {
+    try {
+      const result = await sql`
+        SELECT id FROM reservation_emails WHERE id = ${uid}
+      `
+      return result.length > 0
+    } catch (error) {
+      console.error(`❌ Error checking reservation existence for UID ${uid}:`, error)
+      return false
+    }
+  }
 }
 
 export const databaseImporter = new DatabaseImporter()
