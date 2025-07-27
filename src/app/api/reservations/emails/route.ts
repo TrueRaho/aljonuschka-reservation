@@ -51,11 +51,11 @@ export async function GET() {
         ELSE 1 
       END,
       CASE 
-        WHEN re.status = 'pending' THEN re.reservation_date 
+        WHEN re.status = 'pending' THEN re.id 
         ELSE NULL 
-      END ASC,
+      END DESC,
       CASE 
-        WHEN re.status != 'pending' THEN re.reservation_date 
+        WHEN re.status != 'pending' THEN re.id 
         ELSE NULL 
       END DESC
   `
