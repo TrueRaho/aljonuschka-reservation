@@ -64,7 +64,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
     }
   }
 
-  const displayName = reservation.last_name || reservation.email.split("@")[0]
+  const displayName = reservation.first_name || reservation.email.split("@")[0]
 
   return (
     <Card className={`${getCardStyles()} transition-colors duration-200`}>
