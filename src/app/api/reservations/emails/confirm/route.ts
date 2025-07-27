@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { neon } from "@neondatabase/serverless"
+import { imapFetcher } from "@/lib/IMAP-fetcher"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -35,7 +36,16 @@ export async function POST(request: NextRequest) {
       WHERE id = ${emailId}
     `
 
-    return NextResponse.json({ success: true })
+    // Set \Seen flag in IMAP for the email
+    const imapSuccess = await imapFetcher.setEmailSeen(emailId)
+    if (!imapSuccess) {
+      console.warn(`⚠️ Failed to set seen flag for UID ${emailId}, but reservation was confirmed in DB`)
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      imapFlagSet: imapSuccess
+    })
   } catch (error) {
     console.error("Error confirming reservation:", error)
     return NextResponse.json({ error: "Failed to confirm reservation" }, { status: 500 })

@@ -565,6 +565,37 @@ class IMAPFetcher {
     
     return decoded
   }
+
+  async setEmailSeen(uid: number): Promise<boolean> {
+    const client = new ImapFlow({
+      host: this.config.server,
+      port: this.config.port,
+      secure: true,
+      auth: {
+        user: this.config.user,
+        pass: this.config.password,
+      },
+    })
+
+    try {
+      await client.connect()
+      const mailbox = await client.getMailboxLock('INBOX')
+
+      try {
+        // Устанавливаем флаг \Seen для указанного UID
+        await client.messageFlagsAdd(uid, ['\\Seen'])
+        console.log(`👁️ UID ${uid} marked as seen`)
+        return true
+      } finally {
+        mailbox.release()
+      }
+    } catch (error) {
+      console.error(`❌ Error setting seen flag for UID ${uid}:`, error)
+      return false
+    } finally {
+      await client.logout()
+    }
+  }
 }
 
 export const imapFetcher = new IMAPFetcher()
