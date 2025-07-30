@@ -1,5 +1,5 @@
 import nodemailer, { SentMessageInfo } from 'nodemailer'
-import { imapFetcher } from '../IMAP-fetcher'
+import { imapFetcher } from '../IMAP'
 
 interface EmailConfig {
   to: string;

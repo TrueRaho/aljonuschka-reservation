@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { neon } from "@neondatabase/serverless"
-import { imapFetcher } from "@/lib/IMAP-fetcher"
+import { imapFetcher } from "@/lib/IMAP"
 
 const sql = neon(process.env.DATABASE_URL!)
 

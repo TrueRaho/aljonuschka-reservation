@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { imapFetcher } from '@/lib/IMAP-fetcher'
+import { imapFetcher } from '@/lib/IMAP'
 import { databaseImporter } from '@/lib/importDB'
 
 export async function GET() {

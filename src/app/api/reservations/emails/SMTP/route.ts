@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
-import { sendEmail } from '@/lib/smtp/SMTP-sender'
+import { sendEmail } from '@/lib/smtp/SMTP'
 import { getEmailTemplate } from '@/lib/smtp/emailTemplates'
 import { EmailReservation } from '@/types/email-reservations'
 

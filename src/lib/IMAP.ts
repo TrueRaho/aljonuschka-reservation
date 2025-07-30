@@ -111,6 +111,23 @@ class IMAPFetcher {
     return `+49${withoutLeadingZero}`
   }
 
+  /**
+   * Очищает поле special_requests от нежелательного текста
+   */
+  private cleanSpecialRequests(text: string): string {
+    const unwantedText = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der gröÃte Genuss-Guide für die Region. Hier k: Unchecked'
+    
+    // Удаляем нежелательный текст
+    let cleaned = text.replace(unwantedText, '').trim()
+    
+    // Если после очистки поле пустое, возвращаем дефис
+    if (!cleaned) {
+      return '-'
+    }
+    
+    return cleaned
+  }
+
   private parseBody(body: string, receivedAt: Date): ParsedEmailReservation {
     const firstName = this.formatName(this.extractCleaned('Vorname', body, true))
     const lastName = this.formatName(this.extractCleaned('Nachname', body, true))
@@ -127,7 +144,8 @@ class IMAPFetcher {
     
     const timeStr = this.extractCleaned('Choose a time', body, true)
     const guestsRaw = this.extractCleaned('Anzahl Personen', body, true)
-    const specialRequests = this.extractCleaned('Anmerkungen', body, true)
+    const specialRequestsRaw = this.extractCleaned('Anmerkungen', body, true)
+    const specialRequests = this.cleanSpecialRequests(specialRequestsRaw)
     
     console.log(`📅 Extracted date: '${dateStr}', time: '${timeStr}', guests: '${guestsRaw}'`)
 

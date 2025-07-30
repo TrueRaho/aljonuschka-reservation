@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless'
-import type { ParsedEmailReservation } from './IMAP-fetcher'
+import type { ParsedEmailReservation } from './IMAP'
 
 const sql = neon(process.env.DATABASE_URL!)
 
