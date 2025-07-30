@@ -48,9 +48,9 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
     return format(new Date(dateString), "MMM d, yyyy")
   }
 
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return "Time not specified"
-    return timeString
+  const formatTime = (timeString: string) => {
+    const [hours, minutes] = timeString.split(":")
+    return `${hours}:${minutes}`
   }
 
   const getCardStyles = () => {

@@ -16,10 +16,7 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour % 12 || 12
-    return `${displayHour}:${minutes} ${ampm}`
+    return `${hours}:${minutes}`
   }
 
   const formatDate = (date: string) => {

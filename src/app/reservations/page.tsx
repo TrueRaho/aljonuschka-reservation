@@ -101,6 +101,31 @@ export default function ReservationsPage() {
     signOut({ callbackUrl: "/login" })
   }
 
+  const handleEmailsClick = async () => {
+    try {
+      // Получаем и обрабатываем письма через оптимизированный IMAP роут без показа toast
+      console.log('🚀 Fetching and processing emails from IMAP before navigation...')
+      const response = await fetch('/api/reservations/emails/IMAP')
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📊 Processing result:', {
+          totalProcessed: data.totalProcessed,
+          newReservations: data.emailsFound,
+          confirmedByFlags: data.confirmedByFlags,
+          imported: data.imported
+        })
+      }
+      
+      // Переходим на страницу emails независимо от результата запроса
+      router.push('/reservations/emails')
+    } catch (error) {
+      console.error('❌ Error fetching emails:', error)
+      // Всё равно переходим на страницу emails даже при ошибке
+      router.push('/reservations/emails')
+    }
+  }
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -129,7 +154,7 @@ export default function ReservationsPage() {
                 <span className="capitalize">{session.user?.role}</span>
               </div> */}
               <Button
-                onClick={() => router.push('/reservations/emails')}
+                onClick={handleEmailsClick}
                 variant="outline"
                 size="sm"
                 className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
