@@ -116,9 +116,11 @@ class IMAPFetcher {
    */
   private cleanSpecialRequests(text: string): string {
     const unwantedText = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der gröÃte Genuss-Guide für die Region. Hier k: Unchecked'
+    const unwantedText2 = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der gröÃte Genuss-Guide für die Region. Hier k: Checked'
     
     // Удаляем нежелательный текст
     let cleaned = text.replace(unwantedText, '').trim()
+    cleaned = cleaned.replace(unwantedText2, '').trim()
     
     // Если после очистки поле пустое, возвращаем дефис
     if (!cleaned) {
