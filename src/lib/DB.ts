@@ -139,7 +139,7 @@ export class DatabaseImporter {
     try {
       await sql`
         UPDATE reservation_emails 
-        SET status = ${status}, updated_at = NOW()
+        SET status = ${status}
         WHERE id = ${uid}
       `
       console.log(`✅ Updated UID ${uid} status to ${status}`)

@@ -328,7 +328,9 @@ class IMAPFetcher {
             }
 
             // Проверяем флаги
+            console.log(`🔍 UID ${uid} raw flags:`, message.flags)
             const flags = this.extractEmailFlags(message.flags)
+            console.log(`🔍 UID ${uid} parsed flags:`, flags)
             
             if (flags.seen || flags.answered) {
               // Обновляем статус на confirmed
