@@ -165,6 +165,20 @@ export class DatabaseImporter {
       return false
     }
   }
+
+  async getPendingReservations(): Promise<number[]> {
+    try {
+      const result = await sql`
+        SELECT id FROM reservation_emails 
+        WHERE status = 'pending'
+        ORDER BY id ASC
+      `
+      return result.map(row => row.id as number)
+    } catch (error) {
+      console.error('❌ Error getting pending reservations:', error)
+      return []
+    }
+  }
 }
 
 export const databaseImporter = new DatabaseImporter()

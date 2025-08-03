@@ -323,6 +323,83 @@ class IMAPFetcher {
     }
   }
 
+  async checkPendingReservationsStatus(): Promise<{ checkedCount: number; confirmedCount: number; errors: string[] }> {
+    const result: { checkedCount: number; confirmedCount: number; errors: string[] } = {
+      checkedCount: 0,
+      confirmedCount: 0,
+      errors: []
+    }
+
+    const client = new ImapFlow({
+      host: this.config.server,
+      port: this.config.port,
+      secure: true,
+      auth: {
+        user: this.config.user,
+        pass: this.config.password,
+      },
+    })
+
+    try {
+      await client.connect()
+      const mailbox = await client.getMailboxLock('INBOX')
+
+      try {
+        // Получаем все pending резервации из БД
+        const pendingUids = await this.dbImporter.getPendingReservations()
+        console.log(`📋 Found ${pendingUids.length} pending reservations to check`)
+
+        if (pendingUids.length === 0) {
+          return result
+        }
+
+        // Проверяем каждую pending резервацию
+        for (const uid of pendingUids) {
+          try {
+            result.checkedCount++
+            
+            // Получаем флаги сообщения по UID
+            const message = await client.fetchOne(uid, {
+              flags: true
+            })
+
+            if (!message || typeof message === 'boolean') {
+              console.log(`⚠️ Message not found for UID ${uid}`)
+              continue
+            }
+
+            // Проверяем флаги
+            const flags = this.extractEmailFlags(message.flags)
+            
+            if (flags.seen || flags.answered) {
+              // Обновляем статус на confirmed
+              const updated = await this.dbImporter.updateReservationStatus(uid, 'confirmed')
+              if (updated) {
+                result.confirmedCount++
+                console.log(`✅ UID ${uid} updated from pending to confirmed (seen=${flags.seen}, answered=${flags.answered})`)
+              } else {
+                result.errors.push(`Failed to update status for UID ${uid}`)
+              }
+            } else {
+              console.log(`📧 UID ${uid} still pending (seen=${flags.seen}, answered=${flags.answered})`)
+            }
+          } catch (error) {
+            const errorMessage = `Error checking UID ${uid}: ${error instanceof Error ? error.message : String(error)}`
+            result.errors.push(errorMessage)
+            console.error(`❌ ${errorMessage}`)
+          }
+        }
+
+        console.log(`📊 Pending check completed: ${result.checkedCount} checked, ${result.confirmedCount} confirmed, ${result.errors.length} errors`)
+        return result
+      } finally {
+        mailbox.release()
+      }
+    } finally {
+      await client.logout()
+    }
+  }
+
   private async parseEmailMessage(message: ImapMessage, uid: number): Promise<ParsedEmailReservation | null> {
     try {
       if (!message.source) {
