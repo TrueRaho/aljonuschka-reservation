@@ -71,6 +71,8 @@ export default function EmailReservationsPage() {
         totalProcessed: data.totalProcessed,
         newReservations: data.emailsFound,
         confirmedByFlags: data.confirmedByFlags,
+        pendingChecked: data.pendingChecked,
+        pendingConfirmed: data.pendingConfirmed,
         imported: data.imported
       })
       
@@ -87,12 +89,28 @@ export default function EmailReservationsPage() {
             messages.push(`${data.emailsFound} новых резерваций`)
           }
           if (data.confirmedByFlags > 0) {
-            messages.push(`${data.confirmedByFlags} подтверждено автоматически`)
+            messages.push(`${data.confirmedByFlags} подтверждено из новых`)
+          }
+          if (data.pendingConfirmed > 0) {
+            messages.push(`${data.pendingConfirmed} pending подтверждено`)
+          }
+          
+          let description = ''
+          if (data.totalProcessed > 0) {
+            description += `Обработано ${data.totalProcessed} новых писем`
+          }
+          if (data.pendingChecked > 0) {
+            if (description) description += ', '
+            description += `проверено ${data.pendingChecked} pending`
+          }
+          if (messages.length > 0) {
+            if (description) description += ': '
+            description += messages.join(', ')
           }
           
           toast({
             title: "Успех",
-            description: `Обработано ${data.totalProcessed} писем: ${messages.join(', ')}`,
+            description: description || "Операция завершена",
           })
         }
       } else {

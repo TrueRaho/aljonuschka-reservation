@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { databaseImporter } from '@/lib/importDB'
+import { databaseImporter } from '@/lib/DB'
 import type { ParsedEmailReservation } from '@/lib/IMAP'
 
 interface ImportRequestBody {

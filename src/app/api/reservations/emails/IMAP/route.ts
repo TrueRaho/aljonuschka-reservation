@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { imapFetcher } from '@/lib/IMAP'
-import { databaseImporter } from '@/lib/importDB'
+import { databaseImporter } from '@/lib/DB'
 
 export async function GET() {
   try {
@@ -37,6 +37,8 @@ export async function GET() {
       emailsFound: processingResult.newReservations.length,
       totalProcessed: processingResult.processedCount,
       confirmedByFlags: processingResult.confirmedCount,
+      pendingChecked: processingResult.pendingCheckedCount,
+      pendingConfirmed: processingResult.pendingConfirmedCount,
       errors: processingResult.errors.length,
       imported: importResult?.processedCount || 0,
       emails: processingResult.newReservations,

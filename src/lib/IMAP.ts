@@ -1,5 +1,5 @@
 import { ImapFlow } from 'imapflow'
-import { DatabaseImporter } from './importDB'
+import { DatabaseImporter } from './DB'
 
 export interface ParsedEmailReservation {
   uid: number
@@ -18,6 +18,8 @@ export interface EmailProcessingResult {
   newReservations: ParsedEmailReservation[]
   processedCount: number
   confirmedCount: number
+  pendingCheckedCount: number
+  pendingConfirmedCount: number
   errors: string[]
 }
 
@@ -205,6 +207,8 @@ class IMAPFetcher {
       newReservations: [],
       processedCount: 0,
       confirmedCount: 0,
+      pendingCheckedCount: 0,
+      pendingConfirmedCount: 0,
       errors: []
     }
 
@@ -302,61 +306,16 @@ class IMAPFetcher {
           }
         }
 
-        console.log(`📈 Processing completed: ${result.processedCount} processed, ${result.newReservations.length} new, ${result.confirmedCount} confirmed, ${result.errors.length} errors`)
-        return result
-      } finally {
-        mailbox.release()
-      }
-    } finally {
-      await client.logout()
-    }
-  }
-
-  private extractEmailFlags(flags?: Set<string>): EmailFlags {
-    if (!flags) {
-      return { seen: false, answered: false }
-    }
-    
-    return {
-      seen: flags.has('\\Seen'),
-      answered: flags.has('\\Answered')
-    }
-  }
-
-  async checkPendingReservationsStatus(): Promise<{ checkedCount: number; confirmedCount: number; errors: string[] }> {
-    const result: { checkedCount: number; confirmedCount: number; errors: string[] } = {
-      checkedCount: 0,
-      confirmedCount: 0,
-      errors: []
-    }
-
-    const client = new ImapFlow({
-      host: this.config.server,
-      port: this.config.port,
-      secure: true,
-      auth: {
-        user: this.config.user,
-        pass: this.config.password,
-      },
-    })
-
-    try {
-      await client.connect()
-      const mailbox = await client.getMailboxLock('INBOX')
-
-      try {
-        // Получаем все pending резервации из БД
+        console.log(`📈 New emails processing completed: ${result.processedCount} processed, ${result.newReservations.length} new, ${result.confirmedCount} confirmed`)
+        
+        // 3. Проверяем существующие pending резервации на флаг \Seen
+        console.log('🔍 Checking existing pending reservations for \\Seen flag...')
         const pendingUids = await this.dbImporter.getPendingReservations()
         console.log(`📋 Found ${pendingUids.length} pending reservations to check`)
-
-        if (pendingUids.length === 0) {
-          return result
-        }
-
-        // Проверяем каждую pending резервацию
+        
         for (const uid of pendingUids) {
           try {
-            result.checkedCount++
+            result.pendingCheckedCount++
             
             // Получаем флаги сообщения по UID
             const message = await client.fetchOne(uid, {
@@ -375,7 +334,7 @@ class IMAPFetcher {
               // Обновляем статус на confirmed
               const updated = await this.dbImporter.updateReservationStatus(uid, 'confirmed')
               if (updated) {
-                result.confirmedCount++
+                result.pendingConfirmedCount++
                 console.log(`✅ UID ${uid} updated from pending to confirmed (seen=${flags.seen}, answered=${flags.answered})`)
               } else {
                 result.errors.push(`Failed to update status for UID ${uid}`)
@@ -384,19 +343,30 @@ class IMAPFetcher {
               console.log(`📧 UID ${uid} still pending (seen=${flags.seen}, answered=${flags.answered})`)
             }
           } catch (error) {
-            const errorMessage = `Error checking UID ${uid}: ${error instanceof Error ? error.message : String(error)}`
+            const errorMessage = `Error checking pending UID ${uid}: ${error instanceof Error ? error.message : String(error)}`
             result.errors.push(errorMessage)
             console.error(`❌ ${errorMessage}`)
           }
         }
-
-        console.log(`📊 Pending check completed: ${result.checkedCount} checked, ${result.confirmedCount} confirmed, ${result.errors.length} errors`)
+        
+        console.log(`📊 Complete processing finished: ${result.processedCount} new processed, ${result.newReservations.length} new reservations, ${result.confirmedCount} confirmed from new, ${result.pendingCheckedCount} pending checked, ${result.pendingConfirmedCount} pending confirmed, ${result.errors.length} errors`)
         return result
       } finally {
         mailbox.release()
       }
     } finally {
       await client.logout()
+    }
+  }
+
+  private extractEmailFlags(flags?: Set<string>): EmailFlags {
+    if (!flags) {
+      return { seen: false, answered: false }
+    }
+    
+    return {
+      seen: flags.has('\\Seen'),
+      answered: flags.has('\\Answered')
     }
   }
 
