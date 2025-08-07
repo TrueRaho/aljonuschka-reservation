@@ -1,4 +1,5 @@
 import { ImapFlow } from 'imapflow'
+import iconv from 'iconv-lite'
 import { DatabaseImporter } from './DB'
 
 export interface ParsedEmailReservation {
@@ -379,12 +380,13 @@ class IMAPFetcher {
         return null
       }
 
-      // Парсим email - source может быть Buffer или string
-      let emailText: string
+      // Парсим email - работаем с сырыми байтами, чтобы не потерять кодировку
+      let rawSource: Buffer
       if (Buffer.isBuffer(message.source)) {
-        emailText = message.source.toString('utf-8')
+        rawSource = message.source
       } else if (typeof message.source === 'string') {
-        emailText = message.source
+        // Преобразуем строку в байты без потери данных
+        rawSource = Buffer.from(message.source, 'latin1')
       } else {
         console.log(`❌ Unexpected source type for UID ${uid}: ${typeof message.source}`)
         return null
@@ -393,8 +395,8 @@ class IMAPFetcher {
       // Извлекаем дату получения
       const receivedAt = message.envelope?.date || new Date()
 
-      // Извлекаем тело письма
-      const body = this.extractEmailBody(emailText)
+      // Извлекаем тело письма с учетом кодировок
+      const body = this.extractEmailBody(rawSource)
       
       if (!body) {
         console.log(`❌ No body found for UID ${uid}`)
@@ -472,12 +474,13 @@ class IMAPFetcher {
               continue
             }
 
-            // Парсим email - source может быть Buffer или string
-            let emailText: string
+            // Парсим email - работаем с сырыми байтами, чтобы не потерять кодировку
+            let rawSource: Buffer
             if (Buffer.isBuffer(message.source)) {
-              emailText = message.source.toString('utf-8')
+              rawSource = message.source
             } else if (typeof message.source === 'string') {
-              emailText = message.source
+              // Преобразуем строку в байты без потери данных
+              rawSource = Buffer.from(message.source, 'latin1')
             } else {
               console.log(`❌ Unexpected source type for UID ${numericUid}: ${typeof message.source}`)
               continue
@@ -486,16 +489,12 @@ class IMAPFetcher {
             // Извлекаем дату получения
             const receivedAt = message.envelope?.date || new Date()
 
-            // Извлекаем тело письма
-            let body = ''
-            
-            // Улучшенное извлечение текста из multipart email
-            body = this.extractEmailBody(emailText)
+            // Извлекаем тело письма с учетом кодировок
+            const body = this.extractEmailBody(rawSource)
             
             console.log(`📝 Body length for UID ${numericUid}: ${body.length} characters`)
             console.log(`🔍 Body preview: ${body.substring(0, 200)}...`)
-            console.log(`🔍 Full email text length: ${emailText.length} chars`)
-            console.log(`🔍 Email text preview: ${emailText.substring(0, 500)}...`)
+            console.log(`🔍 Raw email length: ${rawSource.length} bytes`)
 
             if (!body) {
               console.log(`❌ No body found for UID ${numericUid}`)
@@ -522,7 +521,9 @@ class IMAPFetcher {
     }
   }
 
-  private extractEmailBody(emailText: string): string {
+  private extractEmailBody(rawEmail: Buffer): string {
+    // Конвертируем в строку без потери байтов для парсинга заголовков и boundary
+    const emailText: string = rawEmail.toString('latin1')
     // Поиск boundary для multipart сообщений - поддерживаем разные форматы
     const boundaryMatch = emailText.match(/boundary="([^"]+)"/i) || 
                          emailText.match(/boundary=([^\s;]+)/i)
@@ -552,16 +553,20 @@ class IMAPFetcher {
           console.log(`🔍 Trying to match body with different patterns...`)
           
           if (bodyMatch && bodyMatch[1]) {
-            let extractedBody = bodyMatch[1].trim()
-            console.log(`✅ Found body match: ${extractedBody.substring(0, 100)}...`)
-            
-            // Декодируем quoted-printable если нужно
-            if (part.includes('quoted-printable')) {
+            const rawBodyText: string = bodyMatch[1].trim()
+            const charset: string = this.getCharsetFromPart(part)
+            const cte: string = this.getContentTransferEncoding(part)
+            let bytes: Buffer
+            if (cte === 'base64') {
+              bytes = Buffer.from(rawBodyText.replace(/\s+/g, ''), 'base64')
+            } else if (cte === 'quoted-printable') {
               console.log(`🔄 Decoding quoted-printable...`)
-              extractedBody = this.decodeQuotedPrintable(extractedBody)
-              console.log(`✅ Decoded body: ${extractedBody.substring(0, 100)}...`)
+              bytes = this.decodeQuotedPrintableToBuffer(rawBodyText)
+            } else {
+              bytes = Buffer.from(rawBodyText, 'latin1')
             }
-            console.log(`✅ Extracted text/plain body: ${extractedBody.length} chars`)
+            const extractedBody: string = iconv.decode(bytes, charset)
+            console.log(`✅ Extracted text/plain body: ${extractedBody.length} chars (charset=${charset}, cte=${cte})`)
             return extractedBody
           } else {
             console.log(`❌ No body match found in text/plain part`)
@@ -580,14 +585,20 @@ class IMAPFetcher {
                            part.match(/charset=[^\r\n]*\r?\n\r?\n([\s\S]*?)(?=\r?\n--|\r?\n$|$)/)
           
           if (bodyMatch && bodyMatch[1]) {
-            let extractedBody = bodyMatch[1].trim()
-            // Декодируем quoted-printable если нужно
-            if (part.includes('quoted-printable')) {
-              extractedBody = this.decodeQuotedPrintable(extractedBody)
+            const rawBodyText: string = bodyMatch[1].trim()
+            const charset: string = this.getCharsetFromPart(part)
+            const cte: string = this.getContentTransferEncoding(part)
+            let bytes: Buffer
+            if (cte === 'base64') {
+              bytes = Buffer.from(rawBodyText.replace(/\s+/g, ''), 'base64')
+            } else if (cte === 'quoted-printable') {
+              bytes = this.decodeQuotedPrintableToBuffer(rawBodyText)
+            } else {
+              bytes = Buffer.from(rawBodyText, 'latin1')
             }
-            // Очищаем от HTML тегов
-            extractedBody = this.stripHtmlTags(extractedBody)
-            console.log(`✅ Extracted text/html body: ${extractedBody.length} chars`)
+            const decodedHtml: string = iconv.decode(bytes, charset)
+            const extractedBody: string = this.stripHtmlTags(decodedHtml)
+            console.log(`✅ Extracted text/html body: ${extractedBody.length} chars (charset=${charset}, cte=${cte})`)
             return extractedBody
           }
         }
@@ -596,8 +607,22 @@ class IMAPFetcher {
       // Простое сообщение без multipart
       const simpleBodyMatch = emailText.match(/\n\n([\s\S]*?)$/)
       if (simpleBodyMatch && simpleBodyMatch[1]) {
-        console.log(`✅ Extracted simple body: ${simpleBodyMatch[1].length} chars`)
-        return simpleBodyMatch[1].trim()
+        const headersSectionMatch = emailText.match(/^[\s\S]*?\n\n/)
+        const headersText: string = headersSectionMatch ? headersSectionMatch[0] : ''
+        const charset: string = this.getCharsetFromHeaders(headersText)
+        const cte: string = this.getContentTransferEncoding(headersText)
+        const rawBodyText: string = simpleBodyMatch[1].trim()
+        let bytes: Buffer
+        if (cte === 'base64') {
+          bytes = Buffer.from(rawBodyText.replace(/\s+/g, ''), 'base64')
+        } else if (cte === 'quoted-printable') {
+          bytes = this.decodeQuotedPrintableToBuffer(rawBodyText)
+        } else {
+          bytes = Buffer.from(rawBodyText, 'latin1')
+        }
+        const decoded: string = iconv.decode(bytes, charset)
+        console.log(`✅ Extracted simple body: ${decoded.length} chars (charset=${charset}, cte=${cte})`)
+        return decoded.trim()
       }
     }
     
@@ -605,34 +630,36 @@ class IMAPFetcher {
     return ''
   }
 
-  private decodeQuotedPrintable(text: string): string {
-    // Улучшенное декодирование quoted-printable с поддержкой UTF-8
-    let decoded = text
-      .replace(/=\r?\n/g, '') // Удаляем soft line breaks
-      .replace(/=([0-9A-F]{2})/g, (match, hex) => {
-        return String.fromCharCode(parseInt(hex, 16))
-      })
-    
-    // Попытка исправить UTF-8 кодировку если она была неправильно декодирована
-    try {
-      // Если текст содержит неправильно декодированные UTF-8 символы, пытаемся исправить
-      if (decoded.includes('Ã¤')) {
-        decoded = decoded.replace(/Ã¤/g, 'ä')
+  private decodeQuotedPrintableToBuffer(text: string): Buffer {
+    const softBreaksRemoved: string = text.replace(/=\r?\n/g, '')
+    const bytes: number[] = []
+    for (let i = 0; i < softBreaksRemoved.length; i += 1) {
+      const ch: string = softBreaksRemoved[i]
+      if (ch === '=' && i + 2 < softBreaksRemoved.length) {
+        const hex: string = softBreaksRemoved.substring(i + 1, i + 3)
+        if (/^[0-9A-Fa-f]{2}$/.test(hex)) {
+          bytes.push(parseInt(hex, 16))
+          i += 2
+          continue
+        }
       }
-      if (decoded.includes('Ã¶')) {
-        decoded = decoded.replace(/Ã¶/g, 'ö')
-      }
-      if (decoded.includes('Ã¼')) {
-        decoded = decoded.replace(/Ã¼/g, 'ü')
-      }
-      if (decoded.includes('ÃŸ')) {
-        decoded = decoded.replace(/ÃŸ/g, 'ß')
-      }
-    } catch (error) {
-      console.log(`⚠️ UTF-8 correction failed: ${error}`)
+      bytes.push(softBreaksRemoved.charCodeAt(i))
     }
-    
-    return decoded
+    return Buffer.from(bytes)
+  }
+
+  private getCharsetFromPart(part: string): string {
+    return this.getCharsetFromHeaders(part)
+  }
+
+  private getCharsetFromHeaders(headersText: string, defaultCharset: string = 'utf-8'): string {
+    const m = headersText.match(/charset\s*=\s*"?([a-zA-Z0-9._-]+)"?/i)
+    return (m && m[1]) ? m[1].toLowerCase() : defaultCharset
+  }
+
+  private getContentTransferEncoding(sectionText: string): string {
+    const m = sectionText.match(/content-transfer-encoding:\s*([a-z0-9-]+)/i)
+    return (m && m[1]) ? m[1].toLowerCase() : '7bit'
   }
 
   async setEmailSeen(uid: number): Promise<boolean> {
