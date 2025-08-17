@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, X, Undo2, Mail, Calendar, Users, Clock } from "lucide-react"
+import { Check, X, Minus, Undo2, Mail, Calendar, Users, Clock } from "lucide-react"
 import { format } from "date-fns"
 import { EmailReservation } from "@/types/email-reservations"
 
@@ -12,9 +12,10 @@ interface EmailReservationCardProps {
   onConfirm: (id: number) => Promise<void>
   onReject: (id: number) => Promise<void>
   onUndo: (id: number) => Promise<void>
+  onConfirmSilent: (id: number) => Promise<void>
 }
 
-export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo }: EmailReservationCardProps) {
+export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo, onConfirmSilent }: EmailReservationCardProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleConfirm = async () => {
@@ -39,6 +40,15 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
     setIsLoading(true)
     try {
       await onUndo(reservation.id)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleConfirmSilent = async () => {
+    setIsLoading(true)
+    try {
+      await onConfirmSilent(reservation.id)
     } finally {
       setIsLoading(false)
     }
@@ -127,6 +137,15 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
                   <span className="sr-only sm:not-sr-only sm:ml-1">OK</span>
                 </Button>
                 <Button 
+                  onClick={handleConfirmSilent} 
+                  disabled={isLoading} 
+                  size="sm"
+                  className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-black"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:ml-1">Тихо</span>
+                </Button>
+                <Button 
                   onClick={handleReject} 
                   disabled={isLoading} 
                   size="sm" 
@@ -163,3 +182,4 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo 
     </Card>
   )
 }
+

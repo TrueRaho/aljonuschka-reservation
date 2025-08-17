@@ -190,6 +190,32 @@ export default function EmailReservationsPage() {
     }
   }
 
+  const handleConfirmSilent = async (emailId: number) => {
+    try {
+      const response = await fetch("/api/reservations/emails/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailId }),
+      })
+      if (!response.ok) {
+        throw new Error("Не вышло подтвердить запись")
+      }
+      const data = await response.json()
+      toast({
+        title: "Подтверждено",
+        description: data?.imapFlagSet ? "Статус обновлен, письмо помечено как прочитанное (без отправки клиенту)" : "Статус обновлен (не удалось пометить письмо прочитанным)",
+      })
+      await fetchEmailReservations()
+    } catch (error) {
+      console.error("Error silent confirming reservation:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не вышло подтвердить запись без отправки письма",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleReject = async (emailId: number) => {
     try {
       // Шаг 1: Обновляем статус в базе данных
@@ -383,6 +409,7 @@ export default function EmailReservationsPage() {
                     key={reservation.id}
                     reservation={reservation}
                     onConfirm={handleConfirm}
+                    onConfirmSilent={handleConfirmSilent}
                     onReject={handleReject}
                     onUndo={handleUndo}
                   />
@@ -403,6 +430,7 @@ export default function EmailReservationsPage() {
                     key={reservation.id}
                     reservation={reservation}
                     onConfirm={handleConfirm}
+                    onConfirmSilent={handleConfirmSilent}
                     onReject={handleReject}
                     onUndo={handleUndo}
                   />
