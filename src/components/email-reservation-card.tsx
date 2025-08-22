@@ -13,9 +13,10 @@ interface EmailReservationCardProps {
   onReject: (id: number) => Promise<void>
   onUndo: (id: number) => Promise<void>
   onConfirmSilent: (id: number) => Promise<void>
+  onNameClick: (reservation: EmailReservation) => void
 }
 
-export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo, onConfirmSilent }: EmailReservationCardProps) {
+export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo, onConfirmSilent, onNameClick }: EmailReservationCardProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleConfirm = async () => {
@@ -54,6 +55,8 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
     }
   }
 
+  const handleNameClick = () => onNameClick(reservation)
+
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM d, yyyy")
   }
@@ -84,7 +87,13 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
           <div className="flex items-center gap-2 min-w-0">
             <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="font-medium text-white truncate">{displayName}</p>
+              <Button
+                variant="link"
+                className="p-0 h-auto text-blue-400 hover:text-blue-300 font-medium truncate"
+                onClick={handleNameClick}
+              >
+                {displayName}
+              </Button>
               <p className="text-xs text-gray-400 truncate">{reservation.email}</p>
             </div>
           </div>

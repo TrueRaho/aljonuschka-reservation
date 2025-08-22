@@ -8,6 +8,7 @@ import { ArrowLeft, Mail, RefreshCw } from "lucide-react"
 import { EmailReservationCard } from "@/components/email-reservation-card"
 import { useToast } from "@/hooks/use-toast"
 import { EmailReservation } from "@/types/email-reservations"
+import { ReservationModal } from "@/components/reservation-modal"
 
 export default function EmailReservationsPage() {
   const { data: session, status } = useSession()
@@ -16,6 +17,8 @@ export default function EmailReservationsPage() {
   const [emailReservations, setEmailReservations] = useState<EmailReservation[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState<EmailReservation | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     if (status === "loading") return
@@ -324,6 +327,11 @@ export default function EmailReservationsPage() {
     }
   }
 
+  const handleNameClick = (reservation: EmailReservation): void => {
+    setSelectedReservation(reservation)
+    setIsModalOpen(true)
+  }
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -412,6 +420,7 @@ export default function EmailReservationsPage() {
                     onConfirmSilent={handleConfirmSilent}
                     onReject={handleReject}
                     onUndo={handleUndo}
+                    onNameClick={handleNameClick}
                   />
                 ))}
               </div>
@@ -433,6 +442,7 @@ export default function EmailReservationsPage() {
                     onConfirmSilent={handleConfirmSilent}
                     onReject={handleReject}
                     onUndo={handleUndo}
+                    onNameClick={handleNameClick}
                   />
                 ))}
               </div>
@@ -449,6 +459,7 @@ export default function EmailReservationsPage() {
           )}
         </div>
       </div>
+      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   )
 }

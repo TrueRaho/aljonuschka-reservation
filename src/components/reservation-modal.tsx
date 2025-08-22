@@ -37,7 +37,7 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Детали брони</DialogTitle>
@@ -97,3 +97,4 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
     </Dialog>
   )
 }
+
