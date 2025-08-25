@@ -121,12 +121,14 @@ class IMAPFetcher {
     const unwantedText = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der gröÃte Genuss-Guide für die Region. Hier k: Unchecked'
     const unwantedText2 = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der gröÃte Genuss-Guide für die Region. Hier k: Checked'
     const unwantedText3 = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der größte Genuss-Guide für die Region. Hier k: Checked'
-    
+    const unwantedText4 = 'Sie nutzen das Lust auf Dresden Reservierungssystem für Ihre Reservierungsanfrage. Lust auf Dresden ist der größte Genuss-Guide für die Region. Hier k: Unchecked'
+
     
     // Удаляем нежелательный текст
     let cleaned = text.replace(unwantedText, '').trim()
     cleaned = cleaned.replace(unwantedText2, '').trim()
     cleaned = cleaned.replace(unwantedText3, '').trim()
+    cleaned = cleaned.replace(unwantedText4, '').trim()
     
     // Если после очистки поле пустое, возвращаем дефис
     if (!cleaned) {
