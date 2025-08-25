@@ -143,6 +143,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Check className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:ml-1">OK</span>
                 </Button>
                 <Button 
                   onClick={handleConfirmSilent} 
@@ -151,6 +152,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   <Minus className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:ml-1">Готово</span>
                 </Button>
                 <Button 
                   onClick={handleReject} 
@@ -160,6 +162,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs"
                 >
                   <X className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:ml-1">Нет</span>
                 </Button>
               </>
             )}
