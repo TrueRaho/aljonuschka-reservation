@@ -1,7 +1,8 @@
 import { ImapFlow } from 'imapflow'
 import nodemailer from 'nodemailer'
 import iconv from 'iconv-lite'
-import { getEmailTemplate } from '@/lib/smtp/emailTemplates'
+import { getEmailTemplate, wrapTextInHtmlEmail } from '@/lib/smtp/emailTemplates'
+import type { EmailType } from '@/lib/smtp/emailTemplates'
 import {
   importReservations,
   getMaxUid,
@@ -84,8 +85,6 @@ interface ImapMessage {
   }
   flags?: Set<string>
 }
-
-type EmailType = 'confirmed' | 'rejected' | 'undo'
 
 // --- MailService ---
 
@@ -444,6 +443,39 @@ class MailService {
         type,
       },
     }
+  }
+
+  async sendCustomEmail(to: string, subject: string, body: string): Promise<SendResult> {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(to)) {
+      return { success: false, error: 'Invalid email address' }
+    }
+
+    const html = wrapTextInHtmlEmail(body)
+    const fromAddress = `"Aljonuschka Restaurant" <${this.smtpConfig.auth.user}>`
+
+    try {
+      const transporter = this.createSmtpTransporter()
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject,
+        html,
+      })
+      console.log('📧 Custom email sent successfully:', info.messageId)
+    } catch (error) {
+      console.error('❌ Failed to send custom email:', error)
+      return { success: false, error: `Failed to send email: ${error instanceof Error ? error.message : String(error)}` }
+    }
+
+    try {
+      await this.appendToSent({ from: fromAddress, to, subject, html })
+    } catch (error) {
+      console.warn('⚠️ Custom email sent but IMAP save failed:', error)
+    }
+
+    console.log(`✅ Custom email sent successfully to ${to}`)
+    return { success: true }
   }
 
   // --- IMAP operations ---
