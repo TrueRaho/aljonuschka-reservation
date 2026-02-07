@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { imapFetcher } from '@/lib/IMAP'
-import { importReservations } from '@/services/reservationEmailService'
+import { mailService } from '@/services/mailService'
 
 export async function GET() {
   try {
@@ -12,53 +11,23 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Проверка роли staff
     if (session.user.role !== 'staff') {
-      return NextResponse.json(
-        { error: 'Forbidden: Staff access only' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Forbidden: Staff access only' }, { status: 403 })
     }
 
-    console.log('🚀 Starting optimized IMAP email fetch and processing...')
+    console.log('🚀 Starting IMAP email fetch and processing...')
+    const result = await mailService.fetchAndProcessEmails()
 
-    // Используем новый оптимизированный метод
-    const processingResult = await imapFetcher.fetchAndProcessEmails()
-
-    // Импортируем новые резервации в базу данных
-    let importResult = null
-    if (processingResult.newReservations.length > 0) {
-      console.log(`📥 Importing ${processingResult.newReservations.length} new reservations...`)
-      importResult = await importReservations(processingResult.newReservations)
-    }
-
-    const response = {
-      success: true,
-      emailsFound: processingResult.newReservations.length,
-      totalProcessed: processingResult.processedCount,
-      confirmedByFlags: processingResult.confirmedCount,
-      pendingChecked: processingResult.pendingCheckedCount,
-      pendingConfirmed: processingResult.pendingConfirmedCount,
-      errors: processingResult.errors.length,
-      imported: importResult?.processedCount || 0,
-      emails: processingResult.newReservations,
-      details: {
-        errors: processingResult.errors,
-        importErrors: importResult?.errors || []
-      }
-    }
-
-    console.log('✅ Optimized processing completed:', {
-      totalProcessed: response.totalProcessed,
-      newReservations: response.emailsFound,
-      confirmedByFlags: response.confirmedByFlags,
-      imported: response.imported
+    console.log('✅ Processing completed:', {
+      totalProcessed: result.totalProcessed,
+      newReservations: result.emailsFound,
+      confirmedByFlags: result.confirmedByFlags,
+      imported: result.imported,
     })
 
-    return NextResponse.json(response)
+    return NextResponse.json(result)
   } catch (error) {
-    console.error('❌ Error in optimized IMAP processing:', error)
-
+    console.error('❌ Error in IMAP processing:', error)
     return NextResponse.json(
       {
         success: false,

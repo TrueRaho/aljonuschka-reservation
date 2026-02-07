@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import type { ParsedEmailReservation } from '@/lib/IMAP'
+import type { ParsedEmailReservation } from '@/services/mailService'
+import { getStrikesByEmails } from '@/services/strikeService'
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'rejected'
 
@@ -17,6 +18,7 @@ export interface EmailReservationWithStats {
   status: ReservationStatus
   confirmed_reservations: number
   total_guests_for_date: number
+  strikes: number
 }
 
 export interface ImportResult {
@@ -135,6 +137,10 @@ export async function getReservationsByDate(date: string) {
     where: { reservationDate: new Date(date) },
     orderBy: { reservationTime: 'asc' },
   })
+
+  const uniqueEmails = [...new Set(reservations.map(r => r.email))]
+  const strikesMap = await getStrikesByEmails(uniqueEmails)
+
   return reservations.map(r => ({
     id: Number(r.id),
     first_name: r.firstName,
@@ -146,6 +152,7 @@ export async function getReservationsByDate(date: string) {
     guests: r.guests,
     special_requests: r.specialRequests,
     status: r.status,
+    strikes: strikesMap.get(r.email) ?? 0,
   }))
 }
 
@@ -191,6 +198,10 @@ export async function getAllWithDateStats(): Promise<EmailReservationWithStats[]
     })
   }
 
+  // Batch fetch strikes for all unique emails
+  const uniqueEmails = [...new Set(reservations.map(r => r.email))]
+  const strikesMap = await getStrikesByEmails(uniqueEmails)
+
   // Sort: pending first (by id DESC), then non-pending (by id DESC)
   const sorted = reservations.sort((a, b) => {
     const aIsPending = a.status === 'pending' ? 0 : 1
@@ -216,6 +227,7 @@ export async function getAllWithDateStats(): Promise<EmailReservationWithStats[]
       status: r.status as ReservationStatus,
       confirmed_reservations: stats.count,
       total_guests_for_date: stats.totalGuests,
+      strikes: strikesMap.get(r.email) ?? 0,
     }
   })
 }

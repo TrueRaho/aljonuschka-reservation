@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, X, Minus, Undo2, Mail, Calendar, Users, Clock } from "lucide-react"
+import { Check, X, Minus, Undo2, Mail, Calendar, Users, Clock, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 
@@ -14,9 +14,10 @@ interface EmailReservationCardProps {
   onUndo: (id: number) => Promise<void>
   onConfirmSilent: (id: number) => Promise<void>
   onNameClick: (reservation: EmailReservation) => void
+  onStrike: (email: string) => Promise<void>
 }
 
-export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo, onConfirmSilent, onNameClick }: EmailReservationCardProps) {
+export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo, onConfirmSilent, onNameClick, onStrike }: EmailReservationCardProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleConfirm = async () => {
@@ -55,6 +56,15 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
     }
   }
 
+  const handleStrike = async () => {
+    setIsLoading(true)
+    try {
+      await onStrike(reservation.email)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleNameClick = () => onNameClick(reservation)
 
   const formatDate = (dateString: string) => {
@@ -67,6 +77,19 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
   }
 
   const getCardStyles = () => {
+    const hasAlarmingStrikes = reservation.strikes >= 3
+
+    if (hasAlarmingStrikes) {
+      switch (reservation.status) {
+        case "confirmed":
+          return "bg-green-900/20 border-red-500 border-2"
+        case "rejected":
+          return "bg-red-900/20 border-red-500 border-2"
+        default:
+          return "bg-gray-800 border-red-500 border-2"
+      }
+    }
+
     switch (reservation.status) {
       case "confirmed":
         return "bg-green-900/20 border-green-700/50"
@@ -87,13 +110,21 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
           <div className="flex items-center gap-2 min-w-0">
             <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <div className="min-w-0">
-              <Button
-                variant="link"
-                className="p-0 h-auto text-blue-400 hover:text-blue-300 font-medium truncate"
-                onClick={handleNameClick}
-              >
-                {displayName}
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-blue-400 hover:text-blue-300 font-medium truncate"
+                  onClick={handleNameClick}
+                >
+                  {displayName}
+                </Button>
+                {reservation.strikes > 0 && (
+                  <div className={`flex items-center gap-0.5 text-xs ${reservation.strikes >= 3 ? 'text-red-400' : 'text-amber-400'}`}>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span className="font-medium">{reservation.strikes}</span>
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-gray-400 truncate">{reservation.email}</p>
             </div>
           </div>
@@ -134,30 +165,42 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
 
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Strike button - always visible */}
+            <Button
+              onClick={handleStrike}
+              disabled={isLoading}
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-amber-500 hover:text-amber-400 hover:bg-amber-900/20"
+              title="Добавить страйк"
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+            </Button>
+
             {reservation.status === 'pending' && (
               <>
-                <Button 
-                  onClick={handleConfirm} 
-                  disabled={isLoading} 
+                <Button
+                  onClick={handleConfirm}
+                  disabled={isLoading}
                   size="sm"
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Check className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:ml-1">OK</span>
                 </Button>
-                <Button 
-                  onClick={handleConfirmSilent} 
-                  disabled={isLoading} 
+                <Button
+                  onClick={handleConfirmSilent}
+                  disabled={isLoading}
                   size="sm"
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   <Minus className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:ml-1">Готово</span>
                 </Button>
-                <Button 
-                  onClick={handleReject} 
-                  disabled={isLoading} 
-                  size="sm" 
+                <Button
+                  onClick={handleReject}
+                  disabled={isLoading}
+                  size="sm"
                   variant="destructive"
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs"
                 >
@@ -191,4 +234,3 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
     </Card>
   )
 }
-

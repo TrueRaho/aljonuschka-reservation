@@ -32,3 +32,12 @@ model AuthPassword {
 
   @@map("auth_passwords")
 }
+
+model CustomerStrike {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  strikes   Int      @default(0)
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("customer_strikes")
+}

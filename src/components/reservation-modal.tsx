@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Phone, Mail, Calendar, Users, Clock, MessageSquare } from "lucide-react"
+import { Phone, Mail, Calendar, Users, Clock, MessageSquare, AlertTriangle } from "lucide-react"
 import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 
 interface ReservationModalProps {
@@ -86,9 +86,17 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
               <div className="flex items-start gap-3">
                 <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5" />
                 <div>
-                  {/* <p className="text-sm text-gray-400 mb-1">Спец запросы:</p> */}
                   <p className="text-gray-300">{reservation.special_requests}</p>
                 </div>
+              </div>
+            )}
+
+            {reservation.strikes > 0 && (
+              <div className="flex items-center gap-3">
+                <AlertTriangle className={`h-4 w-4 ${reservation.strikes >= 3 ? 'text-red-400' : 'text-amber-400'}`} />
+                <span className={`${reservation.strikes >= 3 ? 'text-red-400 font-medium' : 'text-amber-400'}`}>
+                  {reservation.strikes} {reservation.strikes === 1 ? 'страйк' : 'страйков'}
+                </span>
               </div>
             )}
           </div>

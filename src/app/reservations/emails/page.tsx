@@ -6,14 +6,13 @@ import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Mail, RefreshCw } from "lucide-react"
 import { EmailReservationCard } from "@/components/email-reservation-card"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 import { ReservationModal } from "@/components/reservation-modal"
 
 export default function EmailReservationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { toast } = useToast()
   const [emailReservations, setEmailReservations] = useState<EmailReservation[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -27,7 +26,7 @@ export default function EmailReservationsPage() {
       router.push("/login")
       return
     }
-  }, [session, status, router, toast])
+  }, [session, status, router])
 
   const fetchEmailReservations = useCallback(async () => {
     try {
@@ -40,16 +39,12 @@ export default function EmailReservationsPage() {
       }
     } catch (error) {
       console.error("Failed to fetch email reservations:", error)
-      toast({
-        title: "Error",
-        description: "Не вышло загрузить email-записи",
-        variant: "destructive",
-      })
+      toast.error("Не вышло загрузить email-записи")
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     if (session) {
@@ -59,16 +54,15 @@ export default function EmailReservationsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    
+
     try {
-      // Получаем и обрабатываем письма через оптимизированный IMAP роут
       console.log('🚀 Fetching and processing emails from IMAP...')
       const response = await fetch('/api/reservations/emails/IMAP')
-      
+
       if (!response.ok) {
         throw new Error(`IMAP processing failed: ${response.statusText}`)
       }
-      
+
       const data = await response.json()
       console.log('📊 Processing result:', {
         totalProcessed: data.totalProcessed,
@@ -78,14 +72,10 @@ export default function EmailReservationsPage() {
         pendingConfirmed: data.pendingConfirmed,
         imported: data.imported
       })
-      
-      // Показываем результат пользователю
+
       if (data.success) {
         if (data.totalProcessed === 0) {
-          toast({
-            title: "Информация",
-            description: "Новых писем не найдено",
-          })
+          toast.info("Новых писем не найдено")
         } else {
           const messages = []
           if (data.emailsFound > 0) {
@@ -97,7 +87,7 @@ export default function EmailReservationsPage() {
           if (data.pendingConfirmed > 0) {
             messages.push(`${data.pendingConfirmed} pending подтверждено`)
           }
-          
+
           let description = ''
           if (data.totalProcessed > 0) {
             description += `Обработано ${data.totalProcessed} новых писем`
@@ -110,30 +100,18 @@ export default function EmailReservationsPage() {
             if (description) description += ': '
             description += messages.join(', ')
           }
-          
-          toast({
-            title: "Успех",
-            description: description || "Операция завершена",
-          })
+
+          toast.success(description || "Операция завершена")
         }
       } else {
-        toast({
-          title: "Ошибка обработки",
-          description: `Ошибок: ${data.errors}. Проверьте логи для деталей.`,
-          variant: "destructive",
-        })
+        toast.error(`Ошибок: ${data.errors}. Проверьте логи для деталей.`)
       }
-      
-      // Обновляем список резерваций
+
       await fetchEmailReservations()
-      
+
     } catch (error) {
       console.error('❌ Refresh error:', error)
-      toast({
-        title: "Ошибка",
-        description: `Не удалось обновить резервации: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive",
-      })
+      toast.error(`Не удалось обновить резервации: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setRefreshing(false)
     }
@@ -141,7 +119,6 @@ export default function EmailReservationsPage() {
 
   const handleConfirm = async (emailId: number) => {
     try {
-      // Шаг 1: Обновляем статус в базе данных
       const response = await fetch("/api/reservations/emails/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,7 +129,6 @@ export default function EmailReservationsPage() {
         throw new Error("Не вышло подтвердить запись")
       }
 
-      // Шаг 2: Отправляем SMTP-письмо клиенту
       try {
         const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
           method: "POST",
@@ -161,35 +137,19 @@ export default function EmailReservationsPage() {
         })
 
         if (smtpResponse.ok) {
-          toast({
-            title: "Успех",
-            description: "Запись подтверждена и письмо отправлено клиенту",
-          })
+          toast.success("Запись подтверждена и письмо отправлено клиенту")
         } else {
-          // Статус обновлен, но письмо не отправлено
-          toast({
-            title: "Частичный успех",
-            description: "Запись подтверждена, но не удалось отправить письмо клиенту",
-            variant: "destructive",
-          })
+          toast.warning("Запись подтверждена, но не удалось отправить письмо клиенту")
         }
       } catch (smtpError) {
         console.error("SMTP Error:", smtpError)
-        toast({
-          title: "Частичный успех",
-          description: "Запись подтверждена, но не удалось отправить письмо клиенту",
-          variant: "destructive",
-        })
+        toast.warning("Запись подтверждена, но не удалось отправить письмо клиенту")
       }
 
       await fetchEmailReservations()
     } catch (error) {
       console.error("Error confirming reservation:", error)
-      toast({
-        title: "Ошибка",
-        description: "Не вышло подтвердить запись",
-        variant: "destructive",
-      })
+      toast.error("Не вышло подтвердить запись")
     }
   }
 
@@ -204,24 +164,16 @@ export default function EmailReservationsPage() {
         throw new Error("Не вышло подтвердить запись")
       }
       const data = await response.json()
-      toast({
-        title: "Подтверждено",
-        description: data?.imapFlagSet ? "Статус обновлен, письмо помечено как прочитанное (без отправки клиенту)" : "Статус обновлен (не удалось пометить письмо прочитанным)",
-      })
+      toast.success(data?.imapFlagSet ? "Статус обновлен, письмо помечено как прочитанное (без отправки клиенту)" : "Статус обновлен (не удалось пометить письмо прочитанным)")
       await fetchEmailReservations()
     } catch (error) {
       console.error("Error silent confirming reservation:", error)
-      toast({
-        title: "Ошибка",
-        description: "Не вышло подтвердить запись без отправки письма",
-        variant: "destructive",
-      })
+      toast.error("Не вышло подтвердить запись без отправки письма")
     }
   }
 
   const handleReject = async (emailId: number) => {
     try {
-      // Шаг 1: Обновляем статус в базе данных
       const response = await fetch("/api/reservations/emails/reject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,7 +184,6 @@ export default function EmailReservationsPage() {
         throw new Error("Не вышло отклонить запись")
       }
 
-      // Шаг 2: Отправляем SMTP-письмо клиенту
       try {
         const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
           method: "POST",
@@ -241,41 +192,24 @@ export default function EmailReservationsPage() {
         })
 
         if (smtpResponse.ok) {
-          toast({
-            title: "Успех",
-            description: "Запись отклонена и письмо отправлено клиенту",
-          })
+          toast.success("Запись отклонена и письмо отправлено клиенту")
         } else {
-          // Статус обновлен, но письмо не отправлено
-          toast({
-            title: "Частичный успех",
-            description: "Запись отклонена, но не удалось отправить письмо клиенту",
-            variant: "destructive",
-          })
+          toast.warning("Запись отклонена, но не удалось отправить письмо клиенту")
         }
       } catch (smtpError) {
         console.error("SMTP Error:", smtpError)
-        toast({
-          title: "Частичный успех",
-          description: "Запись отклонена, но не удалось отправить письмо клиенту",
-          variant: "destructive",
-        })
+        toast.warning("Запись отклонена, но не удалось отправить письмо клиенту")
       }
 
       await fetchEmailReservations()
     } catch (error) {
       console.error("Error rejecting reservation:", error)
-      toast({
-        title: "Ошибка",
-        description: "Не вышло отклонить запись",
-        variant: "destructive",
-      })
+      toast.error("Не вышло отклонить запись")
     }
   }
 
   const handleUndo = async (emailId: number) => {
     try {
-      // Шаг 1: Обновляем статус в базе данных (отменяем отклонение)
       const response = await fetch("/api/reservations/emails/undo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -286,7 +220,6 @@ export default function EmailReservationsPage() {
         throw new Error("Не вышло отменить отклонение")
       }
 
-      // Шаг 2: Отправляем SMTP-письмо клиенту о подтверждении
       try {
         const smtpResponse = await fetch("/api/reservations/emails/SMTP", {
           method: "POST",
@@ -295,41 +228,42 @@ export default function EmailReservationsPage() {
         })
 
         if (smtpResponse.ok) {
-          toast({
-            title: "Успех",
-            description: "Отклонение отменено - запись подтверждена и письмо отправлено клиенту",
-          })
+          toast.success("Отклонение отменено - запись подтверждена и письмо отправлено клиенту")
         } else {
-          // Статус обновлен, но письмо не отправлено
-          toast({
-            title: "Частичный успех",
-            description: "Отклонение отменено, но не удалось отправить письмо клиенту",
-            variant: "destructive",
-          })
+          toast.warning("Отклонение отменено, но не удалось отправить письмо клиенту")
         }
       } catch (smtpError) {
         console.error("SMTP Error:", smtpError)
-        toast({
-          title: "Частичный успех",
-          description: "Отклонение отменено, но не удалось отправить письмо клиенту",
-          variant: "destructive",
-        })
+        toast.warning("Отклонение отменено, но не удалось отправить письмо клиенту")
       }
 
       await fetchEmailReservations()
     } catch (error) {
       console.error("Error undoing rejection:", error)
-      toast({
-        title: "Ошибка",
-        description: "Не вышло отменить отклонение",
-        variant: "destructive",
-      })
+      toast.error("Не вышло отменить отклонение")
     }
   }
 
   const handleNameClick = (reservation: EmailReservation): void => {
     setSelectedReservation(reservation)
     setIsModalOpen(true)
+  }
+
+  const handleStrike = async (email: string) => {
+    try {
+      const response = await fetch("/api/reservations/emails/strikes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, action: "increment" }),
+      })
+      if (!response.ok) throw new Error("Failed to add strike")
+      const data = await response.json()
+      toast.success(`Страйк добавлен (${data.strikes})`)
+      await fetchEmailReservations()
+    } catch (error) {
+      console.error("Strike error:", error)
+      toast.error("Не удалось добавить страйк")
+    }
   }
 
   if (status === "loading" || loading) {
@@ -362,13 +296,6 @@ export default function EmailReservationsPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Назад к расписанию
             </Button>
-            {/* <div className="flex items-center gap-3">
-              <Mail className="w-6 h-6 text-blue-400" />
-              <div>
-                <h1 className="text-2xl font-bold">Email Reservations</h1>
-                <p className="text-gray-400">Manage incoming reservation requests</p>
-              </div>
-            </div> */}
           </div>
 
           <Button
@@ -383,34 +310,12 @@ export default function EmailReservationsPage() {
           </Button>
         </div>
 
-        {/* Stats */}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Pending Requests</p>
-            <p className="text-2xl font-bold text-yellow-400">{pendingReservations.length}</p>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Confirmed</p>
-            <p className="text-2xl font-bold text-green-400">
-              {emailReservations.filter((r) => r.status === "confirmed").length}
-            </p>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Rejected</p>
-            <p className="text-2xl font-bold text-red-400">
-              {emailReservations.filter((r) => r.status === "rejected").length}
-            </p>
-          </div>
-        </div> */}
 
         {/* Email Reservations List */}
         <div className="space-y-6">
           {/* Pending Reservations */}
           {pendingReservations.length > 0 && (
             <div>
-              {/* <h2 className="text-lg font-semibold mb-4 text-yellow-400">
-                Pending Requests ({pendingReservations.length})
-              </h2> */}
               <div className="space-y-4">
                 {pendingReservations.map((reservation) => (
                   <EmailReservationCard
@@ -421,6 +326,7 @@ export default function EmailReservationsPage() {
                     onReject={handleReject}
                     onUndo={handleUndo}
                     onNameClick={handleNameClick}
+                    onStrike={handleStrike}
                   />
                 ))}
               </div>
@@ -430,9 +336,6 @@ export default function EmailReservationsPage() {
           {/* Processed Reservations */}
           {processedReservations.length > 0 && (
             <div>
-              {/* <h2 className="text-lg font-semibold mb-4 text-gray-400">
-                Processed Requests ({processedReservations.length})
-              </h2> */}
               <div className="space-y-4">
                 {processedReservations.map((reservation) => (
                   <EmailReservationCard
@@ -443,6 +346,7 @@ export default function EmailReservationsPage() {
                     onReject={handleReject}
                     onUndo={handleUndo}
                     onNameClick={handleNameClick}
+                    onStrike={handleStrike}
                   />
                 ))}
               </div>

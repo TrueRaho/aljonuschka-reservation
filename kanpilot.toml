@@ -7,28 +7,6 @@ id = "process1"
 name = "To Do"
 
   [[processes.tasks]]
-  id = "dbd5axzomigzv76eu2ppkf36"
-  title = "Вывод по имени, а не фамилии клиента"
-  description = ""
-  tag = "backlog"
-  linkFiles = [ ]
-  dueDate = ""
-  checkList = [ ]
-  priority = ""
-  linkCommits = [ ]
-
-  [[processes.tasks]]
-  id = "krxk6en7omi037e8xyvxsv7d"
-  title = "Возможность писать кастомное письмо"
-  description = ""
-  tag = "backlog"
-  linkFiles = [ ]
-  dueDate = ""
-  checkList = [ ]
-  priority = ""
-  linkCommits = [ ]
-
-  [[processes.tasks]]
   id = "enzb2cobbv7g186lajtm7v1a"
   title = "Сделать страницу графиков посещения ресторана"
   description = ""
@@ -44,10 +22,36 @@ id = "process2"
 name = "In Progress"
 
   [[processes.tasks]]
+  id = "krxk6en7omi037e8xyvxsv7d"
+  title = "Возможность писать кастомное письмо"
+  description = ""
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+[[processes]]
+id = "process3"
+name = "Done"
+
+  [[processes.tasks]]
   id = "task2"
   title = "Весь проект нужно переписать"
   description = "<p></p>"
   tag = "bug"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+  [[processes.tasks]]
+  id = "dbd5axzomigzv76eu2ppkf36"
+  title = "Вывод по имени, а не фамилии клиента"
+  description = ""
+  tag = "backlog"
   linkFiles = [ ]
   dueDate = ""
   checkList = [ ]
@@ -65,7 +69,13 @@ name = "In Progress"
   priority = ""
   linkCommits = [ ]
 
-[[processes]]
-id = "process3"
-name = "Done"
-tasks = [ ]
+  [[processes.tasks]]
+  id = "td3lic682mh5sl57e5hsc4lo"
+  title = "Оптимизация IMAP и SMTP"
+  description = "<p></p>"
+  tag = "bug"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]

@@ -10,12 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LogOut, Eye, EyeOff } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 export default function AdminOnlyPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { toast } = useToast()
 
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -59,20 +58,12 @@ export default function AdminOnlyPage() {
     e.preventDefault()
 
     if (newPassword !== confirmPassword) {
-      toast({
-        title: "Ошибка",
-        description: "Новые пароли не совпадают",
-        variant: "destructive",
-      })
+      toast.error("Новые пароли не совпадают")
       return
     }
 
     if (newPassword.length < 8) {
-      toast({
-        title: "Ошибка",
-        description: "Новый пароль должен содержать не менее 8 символов",
-        variant: "destructive",
-      })
+      toast.error("Новый пароль должен содержать не менее 8 символов")
       return
     }
 
@@ -97,21 +88,14 @@ export default function AdminOnlyPage() {
         throw new Error(data.error || "Ошибка при смене пароля")
       }
 
-      toast({
-        title: "Успех",
-        description: "Пароль staff успешно изменен",
-      })
+      toast.success("Пароль staff успешно изменен")
 
       // Очищаем форму
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: error instanceof Error ? error.message : "Не удалось изменить пароль. Пожалуйста, попробуйте снова.",
-        variant: "destructive",
-      })
+      toast.error(error instanceof Error ? error.message : "Не удалось изменить пароль. Пожалуйста, попробуйте снова.")
     } finally {
       setIsLoading(false)
     }
