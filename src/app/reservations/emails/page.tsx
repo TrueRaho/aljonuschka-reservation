@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Mail, RefreshCw } from "lucide-react"
 import { EmailReservationCard } from "@/components/email-reservation-card"
 import { useToast } from "@/hooks/use-toast"
-import { EmailReservation } from "@/types/email-reservations"
+import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 import { ReservationModal } from "@/components/reservation-modal"
 
 export default function EmailReservationsPage() {

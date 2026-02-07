@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
 import { sendEmail } from '@/lib/smtp/SMTP'
 import { getEmailTemplate } from '@/lib/smtp/emailTemplates'
-import { EmailReservation } from '@/types/email-reservations'
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getReservationById } from '@/services/reservationEmailService'
 
 interface EmailRequestBody {
   uid: number;
@@ -33,25 +30,20 @@ export async function POST(request: NextRequest) {
 
     // Находим резервацию в базе данных по uid
     console.log(`🔍 Looking for reservation with id: ${uid}`)
-    const reservations = await sql`
-      SELECT id, first_name, last_name, email, reservation_date, reservation_time, guests, special_requests, status
-      FROM reservation_emails 
-      WHERE id = ${uid}
-    `
+    const reservation = await getReservationById(uid)
 
-    if (reservations.length === 0) {
+    if (!reservation) {
       return NextResponse.json(
         { error: `Reservation with id ${uid} not found` },
         { status: 404 }
       )
     }
 
-    const reservation = reservations[0] as EmailReservation
     console.log(`📧 Found reservation for: ${reservation.first_name} ${reservation.last_name}`)
 
     // Получаем шаблон письма
     const emailTemplate = getEmailTemplate(type, reservation)
-    
+
     // Отправляем письмо
     await sendEmail({
       to: reservation.email,
@@ -74,7 +66,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ SMTP API Error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to send email',
         details: error instanceof Error ? error.message : String(error)
       },

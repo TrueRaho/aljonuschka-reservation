@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow'
 import iconv from 'iconv-lite'
-import { DatabaseImporter } from './DB'
+import { getMaxUid, checkExists, updateStatus, getPendingUids } from '@/services/reservationEmailService'
 
 export interface ParsedEmailReservation {
   uid: number
@@ -46,7 +46,6 @@ interface ImapConfig {
 
 class IMAPFetcher {
   private config: ImapConfig
-  private dbImporter: DatabaseImporter
 
   constructor() {
     this.config = {
@@ -55,7 +54,6 @@ class IMAPFetcher {
       user: process.env.EMAIL!,
       password: process.env.EMAIL_PASSWORD!,
     }
-    this.dbImporter = new DatabaseImporter()
   }
 
   private stripHtmlTags(text: string): string {
@@ -234,7 +232,7 @@ class IMAPFetcher {
 
       try {
         // 1. Получаем максимальный UID из базы данных
-        const maxUidFromDb = await this.dbImporter.getMaxUidFromDatabase()
+        const maxUidFromDb = await getMaxUid()
         console.log(`📊 Max UID from database: ${maxUidFromDb}`)
 
         // 2. Поиск писем с нужной темой
@@ -285,9 +283,9 @@ class IMAPFetcher {
 
             if (isReadOrAnswered) {
               // Если письмо уже прочитано или отвечено, обновляем статус в БД
-              const exists = await this.dbImporter.checkReservationExists(numericUid)
+              const exists = await checkExists(numericUid)
               if (exists) {
-                await this.dbImporter.updateReservationStatus(numericUid, 'confirmed')
+                await updateStatus(numericUid, 'confirmed')
                 result.confirmedCount++
                 console.log(`✅ UID ${numericUid} marked as confirmed (read/answered)`)
               }
@@ -316,7 +314,7 @@ class IMAPFetcher {
         
         // 3. Проверяем существующие pending резервации на флаг \Seen
         console.log('🔍 Checking existing pending reservations for \\Seen flag...')
-        const pendingUids = await this.dbImporter.getPendingReservations()
+        const pendingUids = await getPendingUids()
         console.log(`📋 Found ${pendingUids.length} pending reservations to check`)
         
         for (const uid of pendingUids) {
@@ -340,7 +338,7 @@ class IMAPFetcher {
             
             if (flags.seen || flags.answered) {
               // Обновляем статус на confirmed
-              const updated = await this.dbImporter.updateReservationStatus(uid, 'confirmed')
+              const updated = await updateStatus(uid, 'confirmed')
               if (updated) {
                 result.pendingConfirmedCount++
                 console.log(`✅ UID ${uid} updated from pending to confirmed (seen=${flags.seen}, answered=${flags.answered})`)

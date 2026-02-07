@@ -1,9 +1,7 @@
 import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getAllPasswordRecords } from "@/services/authService"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,18 +17,15 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Get all password hashes from database
-          const passwordRecords = await sql`
-            SELECT role, password_hash 
-            FROM auth_passwords
-          `
+          const passwordRecords = await getAllPasswordRecords()
 
           // Check password against each role
           for (const record of passwordRecords) {
-            const isValid = await bcrypt.compare(credentials.password, record.password_hash)
+            const isValid = await bcrypt.compare(credentials.password, record.passwordHash)
             if (isValid) {
               return {
                 id: record.role,
-                role: record.role,
+                role: record.role as "admin" | "staff",
               }
             }
           }

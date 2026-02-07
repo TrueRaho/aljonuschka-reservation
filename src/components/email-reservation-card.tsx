@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Check, X, Minus, Undo2, Mail, Calendar, Users, Clock } from "lucide-react"
 import { format } from "date-fns"
-import { EmailReservation } from "@/types/email-reservations"
+import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 
 interface EmailReservationCardProps {
   reservation: EmailReservation

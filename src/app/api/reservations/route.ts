@@ -1,7 +1,5 @@
-import { neon } from "@neondatabase/serverless";
 import { type NextRequest, NextResponse } from "next/server"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getReservationsByDate } from "@/services/reservationEmailService"
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,23 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Date parameter is required" }, { status: 400 })
     }
 
-    const reservations = await sql`
-      SELECT 
-        id,
-        first_name,
-        last_name,
-        phone,
-        email,
-        reservation_date,
-        reservation_time,
-        guests,
-        special_requests,
-        status
-      FROM reservation_emails 
-      WHERE reservation_date = ${date}
-      ORDER BY reservation_time ASC
-    `
-
+    const reservations = await getReservationsByDate(date)
     return NextResponse.json(reservations)
   } catch (error) {
     console.error("Database error:", error)

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { imapFetcher } from '@/lib/IMAP'
-import { databaseImporter } from '@/lib/DB'
+import { importReservations } from '@/services/reservationEmailService'
 
 export async function GET() {
   try {
@@ -21,17 +21,17 @@ export async function GET() {
     }
 
     console.log('🚀 Starting optimized IMAP email fetch and processing...')
-    
+
     // Используем новый оптимизированный метод
     const processingResult = await imapFetcher.fetchAndProcessEmails()
-    
+
     // Импортируем новые резервации в базу данных
     let importResult = null
     if (processingResult.newReservations.length > 0) {
       console.log(`📥 Importing ${processingResult.newReservations.length} new reservations...`)
-      importResult = await databaseImporter.importReservations(processingResult.newReservations)
+      importResult = await importReservations(processingResult.newReservations)
     }
-    
+
     const response = {
       success: true,
       emailsFound: processingResult.newReservations.length,
@@ -47,18 +47,18 @@ export async function GET() {
         importErrors: importResult?.errors || []
       }
     }
-    
+
     console.log('✅ Optimized processing completed:', {
       totalProcessed: response.totalProcessed,
       newReservations: response.emailsFound,
       confirmedByFlags: response.confirmedByFlags,
       imported: response.imported
     })
-    
+
     return NextResponse.json(response)
   } catch (error) {
     console.error('❌ Error in optimized IMAP processing:', error)
-    
+
     return NextResponse.json(
       {
         success: false,

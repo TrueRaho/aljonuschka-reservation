@@ -1,13 +1,19 @@
-import { EmailReservation } from '@/types/email-reservations';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 type EmailType = 'confirmed' | 'rejected' | 'undo';
 
-export function getEmailTemplate(type: EmailType, reservation: EmailReservation): { subject: string, html: string } {
+interface EmailReservationForTemplate {
+  first_name: string
+  last_name: string
+  reservation_date: string
+  reservation_time: string
+}
+
+export function getEmailTemplate(type: EmailType, reservation: EmailReservationForTemplate): { subject: string, html: string } {
   // Форматируем имя
   const fullName = `${reservation.first_name} ${reservation.last_name}`;
-  
+
   // Форматируем дату и время
   const reservationDate = new Date(reservation.reservation_date);
   const formattedDate = format(reservationDate, 'dd.MM.yyyy', { locale: de });
@@ -23,7 +29,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
                       <p>Sehr geehrte/r ${fullName},</p>
                       <p>wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen Ihre Reservierung am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong>.</p>
                       <p>Sollten Sie Fragen oder besondere Wünsche haben, zögern Sie bitte nicht, uns zu kontaktieren.</p>
-                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
                     </div>
                   </body>
                 </html>`
@@ -39,7 +45,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
                       <p>leider haben wir für den von Ihnen gewählten Termin am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> keine Plätze frei, wir bitten um Entschuldigung.</p>
                       <p>Wenn ein Tisch frei wird, werden wir Sie umgehend informieren.</p>
                       <p>Ich danke Ihnen im Voraus für Ihr Verständnis.</p>
-                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
                     </div>
                   </body>
                 </html>`
@@ -55,7 +61,7 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservation)
                       <p>Sie wollten vorher unser Restaurant am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong> besuchen, jetzt können wir einen Tisch für Sie reservieren.</p>
                       <p>Wenn Sie einverstanden sind, bestätigen Sie bitte.</p>
                       <p>Wir freuen uns darauf, von Ihnen zu hören.</p>
-                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA“</p>
+                      <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
                     </div>
                   </body>
                 </html>`

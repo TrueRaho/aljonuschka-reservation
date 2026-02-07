@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Phone, Mail, Calendar, Users, Clock, MessageSquare } from "lucide-react"
-import type { EmailReservation } from "@/types/email-reservations"
+import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 
 interface ReservationModalProps {
   reservation: EmailReservation | null

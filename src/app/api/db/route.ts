@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { databaseImporter } from '@/lib/DB'
+import { importReservations } from '@/services/reservationEmailService'
 import type { ParsedEmailReservation } from '@/lib/IMAP'
 
 interface ImportRequestBody {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     console.log(`📥 Starting import of ${body.emails.length} emails...`)
 
     // Импортируем резервации в базу данных
-    const importResult = await databaseImporter.importReservations(body.emails)
+    const importResult = await importReservations(body.emails)
 
     const responseData = {
       success: importResult.success,

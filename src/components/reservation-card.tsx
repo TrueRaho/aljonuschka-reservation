@@ -1,6 +1,6 @@
 "use client"
 
-import type { EmailReservation } from "@/types/email-reservations"
+import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 
 interface ReservationCardProps {
   reservation: EmailReservation
