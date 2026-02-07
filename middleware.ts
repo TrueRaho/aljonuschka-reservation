@@ -10,12 +10,7 @@ export default withAuth(
         const pathname = req.nextUrl.pathname
         
         // Страница emails доступна только для пользователей с ролью staff
-        if (pathname.startsWith("/reservations/emails")) {
-          return token?.role === "staff"
-        }
-        
-        // Другие маршруты в разделе reservations доступны любому авторизованному пользователю
-        if (pathname.startsWith("/reservations")) {
+        if (pathname.startsWith("/reservations/emails") || pathname.startsWith("/reservations")) {
           return token?.role === "staff"
         }
         
