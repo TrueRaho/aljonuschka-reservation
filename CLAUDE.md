@@ -25,79 +25,92 @@ pnpm lint
 
 # Prisma commands
 npx prisma generate        # Generate Prisma client (outputs to src/generated/prisma/)
-npx prisma migrate dev     # Run migrations
-npx prisma studio          # Open Prisma Studio
+npx prisma migrate dev     # Create and apply migrations in development
+npx prisma migrate deploy  # Apply migrations in production
+npx prisma studio          # Open Prisma Studio GUI
 ```
 
 ## Project Architecture
 
 ### Database Architecture
 
-The project uses **two separate database models** with different access patterns:
+**All database access uses Prisma Client** - no raw SQL queries:
 
-1. **`reservations` table** (via Prisma):
-   - Defined in `prisma/schema.prisma`
-   - Accessed through Prisma Client from `src/generated/prisma`
-   - Simple CRUD operations for manual reservations
+- Prisma singleton: [src/lib/prisma.ts](src/lib/prisma.ts) with PrismaPg adapter for connection pooling
+- Schema: [prisma/schema.prisma](prisma/schema.prisma)
+- Generated client: `src/generated/prisma`
 
-2. **`reservation_emails` table** (via raw SQL):
-   - Created in `scripts/create-email-reservation-table.sql`
-   - Accessed directly through Neon SQL client in [src/lib/DB.ts](src/lib/DB.ts)
+**Database Models:**
+
+1. **`ReservationEmail`** (table: `reservation_emails`):
    - Stores email-based reservations with status tracking (pending/confirmed/rejected)
-   - Uses email UID as primary key to prevent duplicates
-   - SQL function `insert_reservation_email()` defined in `scripts/create-email-function.sql`
+   - Primary key: `id` (BigInt) - stores IMAP email UID to prevent duplicates
+   - Fields: firstName, lastName, phone, email, reservationDate, reservationTime, guests, specialRequests, receivedAt, status
 
-3. **`auth_passwords` table** (via raw SQL):
-   - Created in `scripts/create-auth-table.sql`
+2. **`AuthPassword`** (table: `auth_passwords`):
    - Stores bcrypt password hashes for role-based authentication
    - Roles: `admin` and `staff`
+
+3. **`CustomerStrike`** (table: `customer_strikes`):
+   - Tracks customer no-show/cancellation strikes by email
+   - Used to identify problematic customers
+
+### Service Layer Architecture
+
+Business logic is organized into service modules that encapsulate domain operations:
+
+**[src/services/mailService.ts](src/services/mailService.ts)** - Email processing singleton:
+- **IMAP operations**: Fetches emails with subject `[aljonuschka] Reservierungsanfragen - neue Einreichung`
+- **Email parsing**: Extracts German form fields (Vorname, Nachname, Telefon, E-Mail-Adresse, Datum wählen, Choose a time, Anzahl Personen, Anmerkungen)
+- **Character encoding**: Handles UTF-8, quoted-printable, and base64 encodings
+- **Auto-confirmation**: Monitors email flags (`\Seen`, `\Answered`) to auto-confirm reservations
+- **Two-phase processing**:
+  1. Fetch new emails (UID > max DB UID)
+  2. Check existing pending reservations for confirmation flags
+- **SMTP operations**: Sends confirmation/rejection emails, saves to IMAP Sent folder
+- **Email templates**: Defined in [src/lib/smtp/emailTemplates.ts](src/lib/smtp/emailTemplates.ts)
+
+**[src/services/reservationEmailService.ts](src/services/reservationEmailService.ts)** - Database operations:
+- Import reservations from parsed emails
+- Query reservations with date statistics
+- Update reservation status (pending/confirmed/rejected)
+- Handle BigInt UID conversion for JSON serialization
+
+**[src/services/authService.ts](src/services/authService.ts)** - Authentication operations:
+- Fetch password records for role-based auth
+- Update role passwords
+
+**[src/services/strikeService.ts](src/services/strikeService.ts)** - Customer strike tracking:
+- Get strikes by email(s)
+- Increment/decrement strikes for customer behavior tracking
 
 ### Authentication & Authorization
 
 Role-based authentication using NextAuth with custom credentials provider:
 
 - Configuration: [src/lib/auth.ts](src/lib/auth.ts)
-- Single password per role (admin/staff) stored in `auth_passwords` table
+- Single password per role (admin/staff) stored in `AuthPassword` model
 - JWT strategy with role stored in token
 - Route protection via [middleware.ts](middleware.ts):
   - `/reservations/*` - requires `staff` role
   - `/reservations/emails/*` - requires `staff` role
   - `/admin-only/*` - requires `admin` role
-- Redirect logic in `src/app/api/auth/redirect/route.ts` for role-based landing pages
-
-### Email Processing System
-
-**IMAP Fetching** ([src/lib/IMAP.ts](src/lib/IMAP.ts)):
-- Connects to IMAP server and searches for emails with subject `[aljonuschka] Reservierungsanfragen - neue Einreichung`
-- Parses German form fields from email body (Vorname, Nachname, Telefon, E-Mail-Adresse, Datum wählen, Choose a time, Anzahl Personen, Anmerkungen)
-- Handles multiple character encodings (UTF-8, quoted-printable, base64)
-- Tracks email UIDs to avoid duplicate processing
-- Monitors email flags (`\Seen`, `\Answered`) to auto-confirm reservations
-- Two-phase processing:
-  1. Fetch new emails (UID > max DB UID)
-  2. Check existing pending reservations for confirmation flags
-
-**Database Import** ([src/lib/DB.ts](src/lib/DB.ts)):
-- `DatabaseImporter` class handles batch imports
-- Checks for existing UIDs before insertion
-- Updates reservation status (pending → confirmed/rejected)
-- Uses SQL function or direct INSERT as fallback
-
-**SMTP Email Sending** ([src/lib/smtp/SMTP.ts](src/lib/smtp/SMTP.ts)):
-- Email templates in [src/lib/smtp/emailTemplates.ts](src/lib/smtp/emailTemplates.ts)
-- Saves sent emails to IMAP Sent folder
-- Confirmation and rejection email types
+- Redirect logic in [src/app/api/auth/redirect/route.ts](src/app/api/auth/redirect/route.ts) for role-based landing pages
 
 ### API Routes Structure
 
+**Thin wrapper pattern**: API routes delegate to service layer functions for business logic.
+
 **Reservation Management**:
-- `GET/POST /api/reservations` - CRUD for Prisma reservations
-- `GET /api/reservations/emails` - Fetch email-based reservations
-- `GET /api/reservations/emails/IMAP` - Trigger IMAP fetch and import
-- `POST /api/reservations/emails/SMTP` - Send email response
+- `GET/POST /api/reservations` - CRUD for manual reservations
+- `GET /api/reservations/emails` - Fetch email-based reservations with stats
+- `GET /api/reservations/emails/IMAP` - Trigger IMAP fetch and import (calls `mailService.fetchAndProcessEmails()`)
+- `POST /api/reservations/emails/SMTP` - Send notification email (calls `mailService.sendNotificationEmail()`)
+- `POST /api/reservations/emails/send-custom` - Send custom email (calls `mailService.sendCustomEmail()`)
 - `POST /api/reservations/emails/confirm` - Confirm reservation + mark email seen
 - `POST /api/reservations/emails/reject` - Reject reservation + mark email seen
-- `POST /api/reservations/emails/undo` - Reset reservation to pending
+- `POST /api/reservations/emails/undo` - Undo rejection (rejected → confirmed)
+- `GET/POST /api/reservations/emails/strikes` - Get/update customer strikes
 
 **Admin**:
 - `POST /api/admin/change-password` - Update role passwords
@@ -126,11 +139,39 @@ shadcn/ui components in `src/components/ui/`: button, dialog, card, calendar, in
 
 ## Important Patterns
 
+### Working with BigInt UIDs
+
+Email UIDs are stored as `BigInt` in Prisma (IMAP UIDs can exceed JavaScript's safe integer range):
+
+```typescript
+// In service layer - database operations use BigInt
+await prisma.reservationEmail.findUnique({ where: { id: BigInt(uid) } })
+
+// Before JSON serialization - MUST convert to Number
+return { id: Number(reservation.id), ...otherFields }
+```
+
+**CRITICAL**: Always convert `BigInt` to `Number()` before sending to frontend via JSON.
+
+### Working with Time Fields
+
+The `reservationTime` field is `DateTime @db.Time()` in Prisma but returns a Date object:
+
+```typescript
+// Format for HH:MM display
+function formatTime(dt: Date): string {
+  return dt.toISOString().slice(11, 16)  // "14:30"
+}
+
+// When creating/updating - parse from HH:MM string
+reservationTime: new Date(`1970-01-01T${timeString}:00Z`)
+```
+
 ### Working with Email Reservations
 
-When modifying email processing logic:
+When modifying email processing logic in [src/services/mailService.ts](src/services/mailService.ts):
 
-1. Email parsing is in `IMAPFetcher.parseBody()` in [src/lib/IMAP.ts](src/lib/IMAP.ts)
+1. Email parsing is in `MailService.parseBody()` and `MailService.parseEmailMessage()`
 2. Field extraction uses multiple regex patterns to handle variations
 3. Date format: DD.MM.YYYY → YYYY-MM-DD conversion
 4. Time format: HH:MM (24-hour)
@@ -139,7 +180,7 @@ When modifying email processing logic:
 
 ### Character Encoding Handling
 
-Email bodies require special attention:
+Email bodies require special attention (see `MailService.extractEmailBody()`):
 - Raw bytes handled as latin1 to preserve encoding info
 - Support for quoted-printable, base64, and plain text
 - iconv-lite for charset conversion
@@ -150,14 +191,31 @@ Email bodies require special attention:
 ```
 pending → confirmed (via confirm button OR email marked as \Seen)
 pending → rejected (via reject button)
-confirmed/rejected → pending (via undo button)
+rejected → confirmed (via undo button)
 ```
+
+### Service Layer Pattern
+
+- **Services** contain business logic and database operations
+- **API routes** are thin wrappers that:
+  1. Handle auth/session checks
+  2. Parse request data
+  3. Call service functions
+  4. Return formatted responses
+- **Example**:
+  ```typescript
+  // API route
+  import { mailService } from '@/services/mailService'
+  const result = await mailService.fetchAndProcessEmails()
+  return NextResponse.json(result)
+  ```
 
 ### Type Safety
 
-Custom types in `src/types/`:
-- [src/types/email-reservations.ts](src/types/email-reservations.ts) - Email reservation types
-- [src/types/next-auth.d.ts](src/types/next-auth.d.ts) - NextAuth session extension with role
+Custom types:
+- [src/services/reservationEmailService.ts](src/services/reservationEmailService.ts) - `EmailReservationWithStats` type (snake_case for frontend)
+- [src/services/mailService.ts](src/services/mailService.ts) - `ParsedEmailReservation` type
+- [src/types/next-auth.d.ts](src/types/next-auth.d.ts) - NextAuth session extension with `UserRole` type (`"admin" | "staff"`)
 
 ## Environment Variables
 
@@ -175,12 +233,19 @@ SMTP_SERVER=               # SMTP server hostname
 SMTP_PORT=                 # SMTP port (usually 465/587)
 ```
 
-## Working with Scripts
+## Database Migrations
 
-Utility scripts in `scripts/`:
-- `create-auth-table.sql` - Initialize auth_passwords table
-- `create-email-reservation-table.sql` - Initialize reservation_emails table
-- `create-email-function.sql` - SQL function for safe insertions
-- `mail-fetcher/` - Standalone email processing utilities
+All database changes are managed through Prisma migrations:
 
-Run SQL scripts directly in Neon dashboard or via `psql`.
+```bash
+# Create a new migration after schema changes
+npx prisma migrate dev --name description_of_change
+
+# Apply migrations to production
+npx prisma migrate deploy
+
+# Reset database (WARNING: deletes all data)
+npx prisma migrate reset
+```
+
+**Note**: The `scripts/` directory contains legacy SQL files from before the Prisma refactor. These are kept for reference but are not used in development. All database operations now go through Prisma Client.

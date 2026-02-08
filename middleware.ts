@@ -8,17 +8,22 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
-        
+
         // Страница emails доступна только для пользователей с ролью staff
         if (pathname.startsWith("/reservations/emails") || pathname.startsWith("/reservations")) {
           return token?.role === "staff"
         }
-        
+
+        // Analytics доступен только для staff
+        if (pathname.startsWith("/analytics")) {
+          return token?.role === "staff"
+        }
+
         // Admin-only маршруты
         if (pathname.startsWith("/admin-only")) {
           return token?.role === "admin"
         }
-        
+
         return true
       },
     },
@@ -26,5 +31,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ["/reservations/:path*", "/admin-only/:path*"],
+  matcher: ["/reservations/:path*", "/admin-only/:path*", "/analytics/:path*"],
 }

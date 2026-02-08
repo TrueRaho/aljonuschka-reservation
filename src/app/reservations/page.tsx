@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, Fragment } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { LogOut, Mail } from "lucide-react"
+import { LogOut, Mail, BarChart3 } from "lucide-react"
 import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 import { ReservationModal } from "@/components/reservation-modal"
 import { ReservationCard } from "@/components/reservation-card"
@@ -161,6 +161,15 @@ export default function ReservationsPage() {
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Письма
+              </Button>
+              <Button
+                onClick={() => router.push("/analytics")}
+                variant="outline"
+                size="sm"
+                className="border-gray-600 text-white hover:bg-gray-700 bg-transparent"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Аналитика
               </Button>
               <Button
                 onClick={handleSignOut}
