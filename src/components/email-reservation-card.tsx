@@ -195,7 +195,7 @@ export function EmailReservationCard({ reservation, onConfirm, onReject, onUndo,
                   className="h-7 w-7 p-0 sm:h-7 sm:w-auto sm:px-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   <Minus className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:ml-1">Готово</span>
+                  <span className="sr-only sm:not-sr-only sm:ml-1">Игнор</span>
                 </Button>
                 <Button
                   onClick={handleReject}
