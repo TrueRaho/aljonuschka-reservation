@@ -10,43 +10,11 @@ tasks = [ ]
 [[processes]]
 id = "process2"
 name = "In Progress"
-
-  [[processes.tasks]]
-  id = "enzb2cobbv7g186lajtm7v1a"
-  title = "Сделать страницу графиков посещения ресторана"
-  description = ""
-  tag = "backlog"
-  linkFiles = [ ]
-  dueDate = ""
-  checkList = [ ]
-  priority = ""
-  linkCommits = [ ]
+tasks = [ ]
 
 [[processes]]
 id = "process3"
 name = "Done"
-
-  [[processes.tasks]]
-  id = "krxk6en7omi037e8xyvxsv7d"
-  title = "Возможность писать кастомное письмо"
-  description = ""
-  tag = "backlog"
-  linkFiles = [ ]
-  dueDate = ""
-  checkList = [ ]
-  priority = ""
-  linkCommits = [ ]
-
-  [[processes.tasks]]
-  id = "task1"
-  title = "Черный список для клиентов"
-  description = "<p></p>"
-  tag = "backlog"
-  linkFiles = [ ]
-  dueDate = ""
-  checkList = [ ]
-  priority = ""
-  linkCommits = [ ]
 
   [[processes.tasks]]
   id = "td3lic682mh5sl57e5hsc4lo"
@@ -74,6 +42,39 @@ name = "Done"
   id = "dbd5axzomigzv76eu2ppkf36"
   title = "Вывод по имени, а не фамилии клиента"
   description = ""
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+  [[processes.tasks]]
+  id = "enzb2cobbv7g186lajtm7v1a"
+  title = "Сделать страницу графиков посещения ресторана"
+  description = ""
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+  [[processes.tasks]]
+  id = "krxk6en7omi037e8xyvxsv7d"
+  title = "Возможность писать кастомное письмо"
+  description = ""
+  tag = "backlog"
+  linkFiles = [ ]
+  dueDate = ""
+  checkList = [ ]
+  priority = ""
+  linkCommits = [ ]
+
+  [[processes.tasks]]
+  id = "task1"
+  title = "Черный список для клиентов"
+  description = "<p></p>"
   tag = "backlog"
   linkFiles = [ ]
   dueDate = ""
