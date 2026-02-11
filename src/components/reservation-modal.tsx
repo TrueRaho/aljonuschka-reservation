@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Phone, Mail, Calendar, Users, Clock, MessageSquare, AlertTriangle, Send, ArrowLeft, Loader2 } from "lucide-react"
+import { Phone, Mail, Calendar, Users, Clock, MessageSquare, AlertTriangle, Send, ArrowLeft, Loader2, Plus, Minus } from "lucide-react"
 import { toast } from "sonner"
 import type { EmailReservationWithStats as EmailReservation } from "@/services/reservationEmailService"
 import { emailTemplateOptions, getEmailTemplatePlainText } from "@/lib/smtp/emailTemplates"
@@ -16,14 +16,16 @@ interface ReservationModalProps {
   reservation: EmailReservation | null
   isOpen: boolean
   onClose: () => void
+  onStrikeChange?: () => void
 }
 
-export function ReservationModal({ reservation, isOpen, onClose }: ReservationModalProps) {
+export function ReservationModal({ reservation, isOpen, onClose, onStrikeChange }: ReservationModalProps) {
   const [isComposing, setIsComposing] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState("")
   const [emailSubject, setEmailSubject] = useState("")
   const [emailBody, setEmailBody] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [isStrikeLoading, setIsStrikeLoading] = useState(false)
 
   if (!reservation) return null
 
@@ -52,6 +54,29 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
   const handleClose = () => {
     resetCompose()
     onClose()
+  }
+
+  const handleStrike = async (action: "increment" | "decrement") => {
+    if (!reservation.email) return
+    setIsStrikeLoading(true)
+    try {
+      const response = await fetch("/api/reservations/emails/strikes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: reservation.email, action }),
+      })
+      if (!response.ok) throw new Error("Failed to update strike")
+      const data = await response.json()
+      toast.success(action === "increment"
+        ? `Страйк добавлен (${data.strikes})`
+        : `Страйк убран (${data.strikes})`)
+      onStrikeChange?.()
+    } catch (error) {
+      console.error("Strike error:", error)
+      toast.error("Не удалось обновить страйк")
+    } finally {
+      setIsStrikeLoading(false)
+    }
   }
 
   const resetCompose = () => {
@@ -169,14 +194,34 @@ export function ReservationModal({ reservation, isOpen, onClose }: ReservationMo
                   </div>
                 )}
 
-                {reservation.strikes > 0 && (
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className={`h-4 w-4 ${reservation.strikes >= 3 ? 'text-red-400' : 'text-amber-400'}`} />
-                    <span className={`${reservation.strikes >= 3 ? 'text-red-400 font-medium' : 'text-amber-400'}`}>
-                      {reservation.strikes} {reservation.strikes === 1 ? 'страйк' : 'страйков'}
-                    </span>
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className={`h-4 w-4 ${reservation.strikes >= 3 ? 'text-red-400' : reservation.strikes > 0 ? 'text-amber-400' : 'text-gray-400'}`} />
+                  <span className={`${reservation.strikes >= 3 ? 'text-red-400 font-medium' : reservation.strikes > 0 ? 'text-amber-400' : 'text-gray-400'}`}>
+                    {reservation.strikes} {reservation.strikes === 1 ? 'страйк' : 'страйков'}
+                  </span>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                      onClick={() => handleStrike("increment")}
+                      disabled={isStrikeLoading}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    {reservation.strikes > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                        onClick={() => handleStrike("decrement")}
+                        disabled={isStrikeLoading}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 

@@ -363,7 +363,7 @@ export default function EmailReservationsPage() {
           )}
         </div>
       </div>
-      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStrikeChange={fetchEmailReservations} />
     </div>
   )
 }

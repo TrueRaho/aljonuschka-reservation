@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, Fragment } from "react"
+import { useEffect, useState, useCallback, Fragment } from "react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { LogOut, Mail, BarChart3 } from "lucide-react"
@@ -61,29 +61,29 @@ export default function ReservationsPage() {
   const timeSlots = generateTimeSlots()
   const slotHeight = 60 // Height of each time slot in pixels
 
-  useEffect(() => {
-    const fetchReservations = async () => {
-      setLoading(true)
-      try {
-        const dateStr = format(selectedDate, "yyyy-MM-dd")
-        const response = await fetch(`/api/reservations?date=${dateStr}`)
-        if (response.ok) {
-          const data = await response.json()
-          // Фильтрация только подтверждённых резерваций
-          const confirmedReservations = data.filter(
-            (reservation: EmailReservation) => reservation.status === "confirmed"
-          )
-          setReservations(confirmedReservations)
-        }
-      } catch (error) {
-        console.error("Failed to fetch reservations:", error)
-      } finally {
-        setLoading(false)
+  const fetchReservations = useCallback(async () => {
+    setLoading(true)
+    try {
+      const dateStr = format(selectedDate, "yyyy-MM-dd")
+      const response = await fetch(`/api/reservations?date=${dateStr}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Фильтрация только подтверждённых резерваций
+        const confirmedReservations = data.filter(
+          (reservation: EmailReservation) => reservation.status === "confirmed"
+        )
+        setReservations(confirmedReservations)
       }
+    } catch (error) {
+      console.error("Failed to fetch reservations:", error)
+    } finally {
+      setLoading(false)
     }
-
-    fetchReservations()
   }, [selectedDate])
+
+  useEffect(() => {
+    fetchReservations()
+  }, [fetchReservations])
 
   const getReservationsForTimeSlot = (time: string) => {
     return reservations.filter((reservation) => {
@@ -235,7 +235,7 @@ export default function ReservationsPage() {
           </div>
         </div>
       </div>
-      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <ReservationModal reservation={selectedReservation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onStrikeChange={fetchReservations} />
     </div>
   )
 }
