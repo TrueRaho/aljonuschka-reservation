@@ -12,6 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -33,6 +40,17 @@ import {
 } from "recharts"
 import { ArrowLeft, Users, CalendarCheck, TrendingUp } from "lucide-react"
 import { toast } from "sonner"
+
+type PeriodKey = '7d' | 'month' | '3m' | '6m' | '1y' | 'all'
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  '7d': '7 дней',
+  'month': 'Месяц',
+  '3m': '3 месяца',
+  '6m': 'Пол года',
+  '1y': 'Год',
+  'all': 'Всё время',
+}
 
 interface AnalyticsData {
   kpi: {
@@ -89,11 +107,33 @@ function formatHourLabel(hour: number): string {
   return `${hour.toString().padStart(2, "0")}:00`
 }
 
+function PeriodSelect({ value, onChange }: { value: PeriodKey; onChange: (v: PeriodKey) => void }) {
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as PeriodKey)}>
+      <SelectTrigger className="w-[140px] bg-gray-700 border-gray-600 text-gray-200 text-sm h-8">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="bg-gray-700 border-gray-600">
+        {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => (
+          <SelectItem key={key} value={key} className="text-gray-200 focus:bg-gray-600 focus:text-white">
+            {PERIOD_LABELS[key]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 export default function AnalyticsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const [kpiPeriod, setKpiPeriod] = useState<PeriodKey>('month')
+  const [dailyPeriod, setDailyPeriod] = useState<PeriodKey>('month')
+  const [peakPeriod, setPeakPeriod] = useState<PeriodKey>('3m')
+  const [partySizePeriod, setPartySizePeriod] = useState<PeriodKey>('3m')
 
   useEffect(() => {
     if (status === "loading") return
@@ -104,7 +144,13 @@ export default function AnalyticsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const response = await fetch("/api/analytics")
+      const params = new URLSearchParams({
+        kpi: kpiPeriod,
+        daily: dailyPeriod,
+        peak: peakPeriod,
+        partySize: partySizePeriod,
+      })
+      const response = await fetch(`/api/analytics?${params}`)
       if (response.ok) {
         setData(await response.json())
       } else {
@@ -115,7 +161,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [kpiPeriod, dailyPeriod, peakPeriod, partySizePeriod])
 
   useEffect(() => {
     if (session) {
@@ -152,6 +198,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* KPI Cards */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-gray-300">Показатели</h2>
+          <PeriodSelect value={kpiPeriod} onChange={setKpiPeriod} />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="pt-6">
@@ -160,7 +210,7 @@ export default function AnalyticsPage() {
                   <Users className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Всего гостей (30д)</p>
+                  <p className="text-sm text-gray-400">Всего гостей</p>
                   <p className="text-2xl font-bold text-white">
                     {data.kpi.totalGuests}
                   </p>
@@ -176,7 +226,7 @@ export default function AnalyticsPage() {
                   <CalendarCheck className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Резерваций (30д)</p>
+                  <p className="text-sm text-gray-400">Резерваций</p>
                   <p className="text-2xl font-bold text-white">
                     {data.kpi.totalReservations}
                   </p>
@@ -192,7 +242,7 @@ export default function AnalyticsPage() {
                   <TrendingUp className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Ср. гостей / рез. (30д)</p>
+                  <p className="text-sm text-gray-400">Ср. гостей / рез.</p>
                   <p className="text-2xl font-bold text-white">
                     {data.kpi.avgGuestsPerReservation}
                   </p>
@@ -205,10 +255,15 @@ export default function AnalyticsPage() {
         {/* Daily Traffic Chart */}
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">Трафик гостей по дням</CardTitle>
-            <CardDescription className="text-gray-400">
-              Всего гостей в день за последние 30 дней
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Трафик гостей по дням</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Всего гостей в день за {PERIOD_LABELS[dailyPeriod].toLowerCase()}
+                </CardDescription>
+              </div>
+              <PeriodSelect value={dailyPeriod} onChange={setDailyPeriod} />
+            </div>
           </CardHeader>
           <CardContent>
             <ChartContainer config={dailyTrafficConfig} className="h-[300px] w-full">
@@ -264,10 +319,15 @@ export default function AnalyticsPage() {
           {/* Peak Hours */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white">Пиковые часы</CardTitle>
-              <CardDescription className="text-gray-400">
-                Всего гостей по часам (за последние 90 дней)
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Пиковые часы</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Всего гостей по часам за {PERIOD_LABELS[peakPeriod].toLowerCase()}
+                  </CardDescription>
+                </div>
+                <PeriodSelect value={peakPeriod} onChange={setPeakPeriod} />
+              </div>
             </CardHeader>
             <CardContent>
               <ChartContainer config={peakHoursConfig} className="h-[300px] w-full">
@@ -313,10 +373,15 @@ export default function AnalyticsPage() {
           {/* Party Size Distribution */}
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white">Размер групп</CardTitle>
-              <CardDescription className="text-gray-400">
-                Распределение резерваций по размеру (за 90 дней)
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Размер групп</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Распределение резерваций за {PERIOD_LABELS[partySizePeriod].toLowerCase()}
+                  </CardDescription>
+                </div>
+                <PeriodSelect value={partySizePeriod} onChange={setPartySizePeriod} />
+              </div>
             </CardHeader>
             <CardContent>
               <ChartContainer config={partySizeConfig} className="h-[300px] w-full">
