@@ -39,6 +39,8 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservationF
                     <p>wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen Ihre Reservierung am <strong>${formattedDate}</strong> um <strong>${formattedTime} Uhr</strong>.</p>
                     <p>Sollten Sie Fragen oder besondere Wünsche haben, zögern Sie bitte nicht, uns zu kontaktieren.</p>
                     <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #999;">Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter <strong>0351-33 94 83 77</strong>.</p>
                   </div>
                 </body>
               </html>`
@@ -55,6 +57,8 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservationF
                     <p>Wenn ein Tisch frei wird, werden wir Sie umgehend informieren.</p>
                     <p>Ich danke Ihnen im Voraus für Ihr Verständnis.</p>
                     <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #999;">Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter <strong>0351-33 94 83 77</strong>.</p>
                   </div>
                 </body>
               </html>`
@@ -71,6 +75,8 @@ export function getEmailTemplate(type: EmailType, reservation: EmailReservationF
                     <p>Wenn Sie einverstanden sind, bestätigen Sie bitte.</p>
                     <p>Wir freuen uns darauf, von Ihnen zu hören.</p>
                     <p>Mit freundlichen Grüßen<br />Team „AljonuschkA"</p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #999;">Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter <strong>0351-33 94 83 77</strong>.</p>
                   </div>
                 </body>
               </html>`
@@ -94,7 +100,10 @@ wir freuen uns, Sie in unserem Restaurant begrüßen zu dürfen und bestätigen 
 Sollten Sie Fragen oder besondere Wünsche haben, zögern Sie bitte nicht, uns zu kontaktieren.
 
 Mit freundlichen Grüßen
-Team „AljonuschkA"`,
+Team „AljonuschkA"
+
+---
+Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter 0351-33 94 83 77.`,
       }
     case 'rejected':
       return {
@@ -108,7 +117,10 @@ Wenn ein Tisch frei wird, werden wir Sie umgehend informieren.
 Ich danke Ihnen im Voraus für Ihr Verständnis.
 
 Mit freundlichen Grüßen
-Team „AljonuschkA"`,
+Team „AljonuschkA"
+
+---
+Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter 0351-33 94 83 77.`,
       }
     case 'undo':
       return {
@@ -122,7 +134,10 @@ Wenn Sie einverstanden sind, bestätigen Sie bitte.
 Wir freuen uns darauf, von Ihnen zu hören.
 
 Mit freundlichen Grüßen
-Team „AljonuschkA"`,
+Team „AljonuschkA"
+
+---
+Bitte antworten Sie nicht auf diese E-Mail. Bei Fragen erreichen Sie uns telefonisch unter 0351-33 94 83 77.`,
       }
     default:
       throw new Error('Unknown email type')

@@ -249,8 +249,6 @@ class MailService {
                 continue
               }
 
-              totalProcessed++
-
               const flags = this.extractEmailFlags(message.flags)
               const isReadOrAnswered = flags.seen || flags.answered
 
@@ -261,6 +259,7 @@ class MailService {
                 if (exists) {
                   await updateStatus(numericUid, 'confirmed')
                   confirmedByFlags++
+                  totalProcessed++
                   console.log(`✅ UID ${numericUid} marked as confirmed (read/answered)`)
                 } else {
                   // Email is new (not in DB) but already read/answered in mailbox —
@@ -269,6 +268,7 @@ class MailService {
                   if (parsedReservation) {
                     newReservations.push(parsedReservation)
                     preConfirmedUids.add(numericUid)
+                    totalProcessed++
                     console.log(`📝 UID ${numericUid} parsed as pre-read reservation (will be confirmed)`)
                   }
                 }
@@ -281,6 +281,7 @@ class MailService {
                 const parsedReservation = await this.parseEmailMessage(message, numericUid)
                 if (parsedReservation) {
                   newReservations.push(parsedReservation)
+                  totalProcessed++
                   console.log(`📝 UID ${numericUid} parsed as new reservation`)
                 }
               }
@@ -611,6 +612,9 @@ class MailService {
       }
 
       const parsedData = this.parseBody(body, receivedAt)
+      if (!parsedData) {
+        return null
+      }
       parsedData.uid = uid
 
       return parsedData
@@ -695,7 +699,7 @@ class MailService {
     return cleaned
   }
 
-  private parseBody(body: string, receivedAt: Date): ParsedEmailReservation {
+  private parseBody(body: string, receivedAt: Date): ParsedEmailReservation | null {
     const firstName = this.formatName(this.extractCleaned('Vorname', body, true))
     const lastName = this.formatName(this.extractCleaned('Nachname', body, true))
     const phone = this.formatPhone(this.extractCleaned('Telefon', body, true))
@@ -706,12 +710,16 @@ class MailService {
                     this.extractCleaned('Datum', body, true) ||
                     this.extractCleaned('Date', body, true)
 
-    console.log(`📅 Raw date field: '${dateStr}'`)
-
     const timeStr = this.extractCleaned('Choose a time', body, true)
     const guestsRaw = this.extractCleaned('Anzahl Personen', body, true)
     const specialRequestsRaw = this.extractCleaned('Anmerkungen', body, true)
     const specialRequests = this.cleanSpecialRequests(specialRequestsRaw)
+
+    // Skip non-reservation emails (personal replies, etc.)
+    if (!dateStr || !email) {
+      console.log(`⏭️ Skipping non-reservation email: missing date='${dateStr}', email='${email}'`)
+      return null
+    }
 
     console.log(`📅 Extracted date: '${dateStr}', time: '${timeStr}', guests: '${guestsRaw}'`)
 
