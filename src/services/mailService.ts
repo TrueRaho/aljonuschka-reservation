@@ -195,18 +195,28 @@ class MailService {
     let pendingChecked = 0
     let pendingConfirmed = 0
     const newReservations: ParsedEmailReservation[] = []
+    const preConfirmedUids = new Set<number>()
 
     try {
       await this.withImapConnection(async (client) => {
         await this.withMailboxLock(client, 'INBOX', async () => {
+          // Log mailbox state for diagnostics
+          const mailbox = client.mailbox
+          if (mailbox && typeof mailbox === 'object') {
+            console.log(`📬 INBOX status: exists=${mailbox.exists}, uidNext=${mailbox.uidNext}, uidValidity=${mailbox.uidValidity}`)
+          } else {
+            console.log('⚠️ INBOX mailbox info not available')
+          }
+
           // 1. Get max UID from database
           const maxUidFromDb = await getMaxUid()
           console.log(`📊 Max UID from database: ${maxUidFromDb}`)
 
-          // 2. Search for emails with the target subject
-          const searchResult = await client.search({
-            subject: '[aljonuschka] Reservierungsanfragen - neue Einreichung',
-          })
+          // 2. Search for reservation emails (matches both old and new subject formats)
+          const searchResult = await client.search(
+            { subject: 'Reservierungsanfragen' },
+            { uid: true }
+          )
 
           if (!searchResult || !Array.isArray(searchResult) || searchResult.length === 0) {
             console.log('📭 No emails found with the specified subject')
@@ -232,7 +242,7 @@ class MailService {
                 bodyStructure: true,
                 source: true,
                 flags: true,
-              })
+              }, { uid: true })
 
               if (!message || typeof message === 'boolean') {
                 console.log(`❌ Message not found for UID ${numericUid}`)
@@ -252,10 +262,19 @@ class MailService {
                   await updateStatus(numericUid, 'confirmed')
                   confirmedByFlags++
                   console.log(`✅ UID ${numericUid} marked as confirmed (read/answered)`)
+                } else {
+                  // Email is new (not in DB) but already read/answered in mailbox —
+                  // still parse and import it, then confirm after import
+                  const parsedReservation = await this.parseEmailMessage(message, numericUid)
+                  if (parsedReservation) {
+                    newReservations.push(parsedReservation)
+                    preConfirmedUids.add(numericUid)
+                    console.log(`📝 UID ${numericUid} parsed as pre-read reservation (will be confirmed)`)
+                  }
                 }
 
                 if (!flags.seen) {
-                  await client.messageFlagsAdd(numericUid, ['\\Seen'])
+                  await client.messageFlagsAdd(numericUid, ['\\Seen'], { uid: true })
                   console.log(`👁️ UID ${numericUid} marked as seen`)
                 }
               } else {
@@ -283,7 +302,7 @@ class MailService {
             try {
               pendingChecked++
 
-              const message = await client.fetchOne(uid, { flags: true })
+              const message = await client.fetchOne(uid, { flags: true }, { uid: true })
               if (!message || typeof message === 'boolean') {
                 console.log(`⚠️ Message not found for UID ${uid}`)
                 continue
@@ -323,6 +342,15 @@ class MailService {
     if (newReservations.length > 0) {
       console.log(`📥 Importing ${newReservations.length} new reservations...`)
       importResult = await importReservations(newReservations)
+    }
+
+    // Mark pre-read emails as confirmed (they were already seen in mailbox before import)
+    if (preConfirmedUids.size > 0) {
+      console.log(`📬 Confirming ${preConfirmedUids.size} pre-read reservations...`)
+      for (const uid of preConfirmedUids) {
+        await updateStatus(uid, 'confirmed')
+        console.log(`✅ Pre-confirmed UID ${uid} status updated`)
+      }
     }
 
     console.log(`📊 Complete processing finished: ${totalProcessed} processed, ${newReservations.length} new, ${confirmedByFlags} confirmed, ${pendingChecked} pending checked, ${pendingConfirmed} pending confirmed, ${errors.length} errors`)
@@ -484,7 +512,7 @@ class MailService {
     try {
       return await this.withImapConnection(async (client) => {
         return await this.withMailboxLock(client, 'INBOX', async () => {
-          await client.messageFlagsAdd(uid, ['\\Seen'])
+          await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true })
           console.log(`👁️ UID ${uid} marked as seen`)
           return true
         })
@@ -697,12 +725,20 @@ class MailService {
 
     let reservationDate: string
     try {
-      const dateParts = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
-      if (!dateParts) {
-        throw new Error(`Invalid date format: ${dateStr}`)
+      // Try DD.MM.YYYY format first (old email format)
+      const dotParts = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+      if (dotParts) {
+        const [, day, month, year] = dotParts
+        reservationDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
       }
-      const [, day, month, year] = dateParts
-      reservationDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      // Try YYYY-MM-DD format (new email format)
+      else {
+        const isoParts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
+        if (!isoParts) {
+          throw new Error(`Invalid date format: ${dateStr}`)
+        }
+        reservationDate = `${isoParts[1]}-${isoParts[2]}-${isoParts[3]}`
+      }
     } catch {
       throw new Error(`Invalid or missing reservation date: '${dateStr}'`)
     }
